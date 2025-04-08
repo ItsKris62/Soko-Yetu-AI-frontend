@@ -1,8 +1,60 @@
 @import "tailwindcss";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -----------------------------------  FONTS  ----------------------------------------- */
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('/fonts/Montserrat-Medium.ttf') format('woff2'),
+       url('/fonts/Montserrat-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/OpenSans-Regular.woff2') format('woff2'),
+       url('/fonts/OpenSans-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Raleway';
+  src: url('/fonts/Raleway-Regular.woff2') format('woff2'),
+       url('/fonts/Raleway-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Source Code Pro';
+  src: url('/fonts/SourceCodePro-Regular.woff2') format('woff2'),
+       url('/fonts/SourceCodePro-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+
+
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Fonts */
+  --font-heading: 'Montserrat', sans-serif;
+  --font-body: 'Open Sans', sans-serif;
+  --font-accent: 'Raleway', sans-serif;
+  --font-mono: 'Source Code Pro', monospace;
+
+  /* Colors */
+  --color-primary: #85FFC7;
+  --color-secondary: #297373;
+  --color-accent: #FF8552;
+  --color-neutral: #E6E6E6;
+  --color-dark: #1A1A1A;
+  --color-white: #FFFFFF;
 }
 
 @theme inline {
@@ -20,7 +72,17 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
 }
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+.font-accent {
+  font-family: var(--font-accent);
+}
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+
