@@ -19,11 +19,23 @@ export default function Header() {
   const { openModal } = useModalStore()
   const { isAuthenticated } = useAuthStore()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [language, setLanguage] = useState('English')
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
   const pathname = usePathname()
 
   const filteredLinks = navItems.filter(
     (item) => item.public || isAuthenticated
   )
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'English' ? 'Kiswahili' : 'English')
+    setShowLanguageDropdown(false)
+  }
+
+  const selectLanguage = (lang: string) => {
+    setLanguage(lang)
+    setShowLanguageDropdown(false)
+  }
 
   return (
     <header className="w-full bg-white shadow-sm sticky top-0 z-50">
@@ -33,12 +45,12 @@ export default function Header() {
           <Link href="/" className="text-xl font-bold text-secondary flex items-center gap-1">
             <Image 
               src="https://res.cloudinary.com/veriwoks-sokoyetu/image/upload/v1741705403/Home-images/sguubafg5gk2sbdtqd60.png"
-              alt="AgriConnect AI Logo"
-              width={32}
-              height={32}
+              alt="SokoYetu AI Logo"
+              width={40}
+              height={40}
               className="object-contain"
             />
-            <span className="font-heading">AgriConnect AI</span>
+            <span className="font-heading">SokoYetu AI</span>
           </Link>
         </div>
 
@@ -48,7 +60,7 @@ export default function Header() {
             <Link
               key={item.name}
               href={item.href}
-              className={`hover:text-primary transition ${
+              className={`hover:text-[#85FFC7] transition-colors duration-300 ${
                 pathname === item.href ? 'text-primary' : 'text-dark'
               }`}
             >
@@ -60,27 +72,50 @@ export default function Header() {
         {/* Right section with language, notifications, and auth */}
         <div className="w-1/4 flex items-center justify-end gap-4">
           {/* Language Dropdown */}
-          <div className="relative group">
-            <button className="text-dark">English ⌄</button>
-            {/* Placeholder dropdown */}
-            <div className="absolute right-0 top-full mt-2 bg-white shadow-lg border rounded hidden group-hover:block">
-              <button className="block px-4 py-2 hover:bg-neutral w-full text-left">Swahili</button>
-            </div>
+          <div className="relative">
+            <button 
+              className="text-dark flex items-center gap-1 hover:text-primary transition-colors duration-300"
+              onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+              aria-label="Toggle language"
+            >
+              <i className="fas fa-globe"></i>
+              <span>{language}</span>
+              <i className={`fas fa-chevron-down text-xs ml-1 transition-transform duration-300 ${showLanguageDropdown ? 'rotate-180' : ''}`}></i>
+            </button>
+            {/* Language options dropdown */}
+            {showLanguageDropdown && (
+              <div className="absolute right-0 top-full mt-2 bg-white shadow-lg border rounded-md min-w-[120px] z-10">
+                <button 
+                  className={`block px-4 py-2 hover:bg-neutral w-full text-left flex items-center gap-2 ${language === 'English' ? 'text-primary font-medium' : ''}`}
+                  onClick={() => selectLanguage('English')}
+                >
+                  <i className="fas fa-globe"></i>
+                  <span>English</span>
+                </button>
+                <button 
+                  className={`block px-4 py-2 hover:bg-neutral w-full text-left flex items-center gap-2 ${language === 'Kiswahili' ? 'text-primary font-medium' : ''}`}
+                  onClick={() => selectLanguage('Kiswahili')}
+                >
+                  <i className="fas fa-globe"></i>
+                  <span>Kiswahili</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {isAuthenticated ? (
             <>
-              <button className="text-dark">
+              <button className="text-dark hover:text-primary transition-colors duration-300" aria-label="Notifications">
                 <i className="fas fa-bell"></i>
               </button>
-              <Link href="/profile" className="text-dark">
+              <Link href="/profile" className="text-dark hover:text-primary transition-colors duration-300">
                 <i className="fas fa-user-circle text-lg"></i>
               </Link>
             </>
           ) : (
             <button
               onClick={openModal}
-              className="px-4 py-2 bg-primary text-dark font-semibold rounded"
+              className="px-4 py-2 bg-primary text-dark font-semibold rounded-md hover:bg-[#85FFC7] hover:shadow-md transition-all duration-300 transform hover:scale-105"
             >
               Get Started
             </button>
@@ -104,7 +139,7 @@ export default function Header() {
                 key={item.name}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className={`hover:text-primary ${
+                className={`hover:text-[#85FFC7] transition-colors duration-300 ${
                   pathname === item.href ? 'text-primary' : 'text-dark'
                 }`}
               >
@@ -113,7 +148,10 @@ export default function Header() {
             ))}
             <div className="mt-3 border-t pt-3 flex justify-between">
               <span>Language</span>
-              <button className="text-dark">Swahili</button>
+              <button className="text-dark flex items-center gap-1 hover:text-primary transition-colors duration-300">
+                <i className="fas fa-globe"></i>
+                <span>Swahili</span>
+              </button>
             </div>
 
             {isAuthenticated ? (
@@ -129,7 +167,7 @@ export default function Header() {
                   openModal()
                   setMobileOpen(false)
                 }}
-                className="mt-4 w-full bg-primary text-dark px-4 py-2 rounded"
+                className="mt-4 w-full bg-primary text-dark px-4 py-2 rounded-md hover:bg-[#85FFC7] hover:shadow-md transition-all duration-300 transform hover:scale-105"
               >
                 Get Started
               </button>

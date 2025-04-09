@@ -21,3 +21,13 @@ export async function apiFetch<T = any>(
 
   return data
 }
+
+export async function fetchProductsSSR(filters: Record<string, any>) {
+  const params = new URLSearchParams(filters).toString()
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/featured?${params}`, {
+    next: {
+      revalidate: 60, // 60s cache
+    },
+  })
+  return await res.json()
+}
