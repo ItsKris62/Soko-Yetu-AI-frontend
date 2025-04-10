@@ -14,11 +14,17 @@ export default function Hero() {
 
   return (
     <section
-      className="bg-cover bg-center py-24 text-white relative"
-      style={{
-        backgroundImage: `url('https://res.cloudinary.com/veriwoks-sokoyetu/image/upload/v1742489001/richard-bell-vpfEhvI5UE4-unsplash_cgffcz.jpg')`,
-      }}
+      className="bg-cover bg-center py-24 text-white relative overflow-hidden"
     >
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute top-0 left-0 w-full h-full object-cover -z-10"
+      >
+        <source src="https://res.cloudinary.com/veriwoks-sokoyetu/video/upload/v1744231895/18278705-uhd_3840_2160_24fps_wips72.mp4" type="video/mp4" />
+      </video>
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-start gap-8">
           <div className="flex-1">
@@ -32,19 +38,19 @@ export default function Hero() {
             <div className="flex gap-4 flex-wrap">
               <button 
                 onClick={openModal} 
-                className="bg-[#297373] text-dark font-semibold px-6 py-3 rounded-lg 
+                className="bg-gradient-to-r from-[#297373] to-[#85FFC7] text-dark font-semibold px-6 py-3 rounded-full 
                 transform transition-all duration-300 ease-in-out hover:scale-105 
-                hover:bg-primary/90 hover:shadow-lg active:scale-95 
-                border-2 border-transparent hover:border-primary/20"
+                hover:from-[#85FFC7] hover:to-[#297373] hover:shadow-lg active:scale-95 
+                border-2 border-white"
               >
                 List Your Produce
               </button>
               <button 
                 onClick={openModal} 
-                className="bg-[#297373] text-secondary font-semibold px-6 py-3 rounded-lg 
+                className="bg-gradient-to-r from-[#297373] to-[#85FFC7] text-secondary font-semibold px-6 py-3 rounded-full 
                 transform transition-all duration-300 ease-in-out hover:scale-105 
-                hover:bg-secondary/10 hover:shadow-lg active:scale-95 
-                border-2 border-transparent hover:border-white/20"
+                hover:from-[#85FFC7] hover:to-[#297373] hover:shadow-lg active:scale-95 
+                border-2 border-white"
               >
                 Find Products
               </button>

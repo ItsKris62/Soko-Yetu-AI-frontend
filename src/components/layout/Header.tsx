@@ -114,11 +114,13 @@ export default function Header() {
             </>
           ) : (
             <button
-              onClick={openModal}
-              className="px-4 py-2 bg-primary text-dark font-semibold rounded-md hover:bg-[#85FFC7] hover:shadow-md transition-all duration-300 transform hover:scale-105"
-            >
-              Get Started
-            </button>
+  onClick={() => {
+    openModal();
+  }}
+  className="px-4 py-2 rounded-full bg-gradient-to-r from-[#297373] to-[#85FFC7] text-white text-sm font-bold shadow-lg hover:shadow-xl hover:from-[#85FFC7] hover:to-[#297373] transition-all duration-300 transform hover:scale-110"
+>
+  Get Started
+</button>
           )}
         </div>
 

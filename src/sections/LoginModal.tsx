@@ -10,7 +10,7 @@ export default function LoginModal() {
     <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center px-4">
-        <Dialog.Panel className="w-full max-w-md bg-white p-6 rounded shadow-lg">
+        <Dialog.Panel className="w-full max-w-md bg-white p-6 rounded shadow-lg transform transition-all duration-300 scale-95 opacity-0 animate-modalFadeIn">
           <Dialog.Title className="text-xl font-heading font-bold mb-4">Join AgriConnect AI</Dialog.Title>
           <form className="space-y-4">
             <input
