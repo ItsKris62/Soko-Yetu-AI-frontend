@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userData = await apiFetch<User>('/auth/me', {}, jwt)
       setUser(userData)
-    } catch (err) {
+    } catch {
       // Try refreshing token
       const newToken = await refreshToken()
       if (newToken) {

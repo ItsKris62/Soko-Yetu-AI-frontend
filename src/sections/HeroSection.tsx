@@ -37,7 +37,7 @@ export default function Hero() {
             </p>
             <div className="flex gap-4 flex-wrap">
               <button 
-                onClick={openModal} 
+                onClick={() => openModal('register')} 
                 className="bg-gradient-to-r from-[#297373] to-[#85FFC7] text-dark font-semibold px-6 py-3 rounded-full 
                 transform transition-all duration-300 ease-in-out hover:scale-105 
                 hover:from-[#85FFC7] hover:to-[#297373] hover:shadow-lg active:scale-95 
@@ -46,7 +46,7 @@ export default function Hero() {
                 List Your Produce
               </button>
               <button 
-                onClick={openModal} 
+                onClick={() => openModal('login')} 
                 className="bg-gradient-to-r from-[#297373] to-[#85FFC7] text-secondary font-semibold px-6 py-3 rounded-full 
                 transform transition-all duration-300 ease-in-out hover:scale-105 
                 hover:from-[#85FFC7] hover:to-[#297373] hover:shadow-lg active:scale-95 

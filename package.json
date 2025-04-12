@@ -17,6 +17,7 @@
     "axios": "^1.8.4",
     "countup.js": "^2.8.0",
     "keen-slider": "^6.8.6",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^0.487.0",
     "next": "^15.2.4",
     "next-intl": "^4.0.2",
@@ -24,6 +25,9 @@
     "react": "^19.1.0",
     "react-countup": "^6.5.3",
     "react-dom": "^19.1.0",
+    "react-hot-toast": "^2.5.2",
+    "react-icons": "^5.5.0",
+    "zod": "^3.24.2",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
