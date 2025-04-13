@@ -6,7 +6,7 @@ import { resetSchema } from '@/lib/validators'
 //import { z } from 'zod' // Removed unused import
 import { errorToast, successToast } from '@/utils/toast'
 import { useModalStore } from '@/store/modalStore'
-import Lottie from 'lottie-react'
+import Lottie from '../ui/LottiePlayer'
 import successAnim from '../../../public/lottie/Success-animation.json'
 import { useRouter } from 'next/navigation'
 import { AxiosError } from 'axios'
@@ -115,63 +115,97 @@ export default function PasswordResetForm({ modal = false }: { modal?: boolean }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 animate-slideIn">
-      {step === 'email' && (
+    <form onSubmit={handleSubmit} className="space-y-6 animate-slideIn px-2 py-4">
+    {step === 'email' && (
+      <div>
+      <label className="block text-sm font-medium text-gray-700">Email</label>
+      <div className="relative mt-1">
         <input
           name="email"
           type="email"
           placeholder="Enter your email"
           value={form.email}
           onChange={handleChange}
-          className="input"
+          className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 focus:ring-2 focus:ring-primary text-sm"
           required
         />
-      )}
+        <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">
+          <i className="fas fa-envelope"></i>
+        </span>
+      </div>
+    </div>
+    )}
+  
+    {step === 'verify' && (
+<>
+      <div>
+      <label className="block text-sm font-medium text-gray-700">Full Name</label>
+      <div className="relative mt-1">
+        <input
+          name="name"
+          type="text"
+          placeholder="Your full name"
+          value={form.name}
+          onChange={handleChange}
+          className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 focus:ring-2 focus:ring-primary text-sm"
+          required
+        />
+        <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">
+          <i className="fas fa-user"></i>
+        </span>
+      </div>
+    </div>
 
-      {step === 'verify' && (
-        <>
-          <input
-            name="name"
-            type="text"
-            placeholder="Your full name"
-            value={form.name}
-            onChange={handleChange}
-            className="input"
-            required
-          />
-          <input
-            name="phone"
-            type="tel"
-            placeholder="Phone number"
-            value={form.phone}
-            onChange={handleChange}
-            className="input"
-            required
-          />
-        </>
-      )}
-
-      {step === 'reset' && (
-        <div className="relative">
-          <input
-            name="newPassword"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Enter new password"
-            value={form.newPassword}
-            onChange={handleChange}
-            className="input pr-10"
-            required
-          />
-          <i
-            onClick={() => setShowPassword(!showPassword)}
-            className={`fas fa-${showPassword ? 'eye-slash' : 'eye'} absolute right-3 top-3 text-gray-500 cursor-pointer`}
-          />
-        </div>
-      )}
-
-      <button type="submit" className="btn-primary w-full">
-        {step === 'email' ? 'Next' : step === 'verify' ? 'Verify' : 'Reset Password'}
+        <div className="mt-4">
+  <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+  <div className="relative mt-1">
+    <input
+      name="phone"
+      type="tel"
+      placeholder="Phone number"
+      value={form.phone}
+      onChange={handleChange}
+      className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 focus:ring-2 focus:ring-primary text-sm"
+      required
+    />
+    <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">
+      <i className="fas fa-phone"></i>
+    </span>
+  </div>
+</div>
+</>
+    )}
+  
+    {step === 'reset' && (
+      <div className="relative">
+      <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+      <input
+        name="newPassword"
+        type={showPassword ? 'text' : 'password'}
+        placeholder="Enter new password"
+        value={form.newPassword}
+        onChange={handleChange}
+        className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 pr-10 focus:ring-2 focus:ring-primary text-sm"
+        required
+      />
+      <span className="absolute left-3 top-2.5 text-gray-400">
+        <i className="fas fa-lock"></i>
+      </span>
+      <button
+        type="button"
+        onClick={() => setShowPassword(!showPassword)}
+        className="absolute right-3 top-2.5 text-gray-500 hover:text-primary"
+        aria-label="Toggle Password"
+      >
+        <i className={`fas fa-${showPassword ? 'eye-slash' : 'eye'}`}></i>
       </button>
-    </form>
+    </div>
+    )}
+  
+    <button type="submit" className="btn-primary w-full">
+      {step === 'email' ? 'Next' : step === 'verify' ? 'Verify' : 'Reset Password'}
+    </button>
+  </form>
+  
   )
 }

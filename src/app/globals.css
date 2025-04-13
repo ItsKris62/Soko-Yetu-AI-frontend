@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+
 /* -----------------------------------  FONTS  ----------------------------------------- */
 
 @font-face {
@@ -70,6 +71,8 @@
 body {
   font-family: var(--font-body);
 }
+
+
 
 .font-heading {
   font-family: var(--font-heading);

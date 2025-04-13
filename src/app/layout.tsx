@@ -8,6 +8,8 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AuthModal from "@/components/shared/AuthModal"
 
+import PageTransition from "@/components/ui/PageTransition";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -46,6 +48,8 @@ export default function RootLayout({
         <Toaster position="top-center" toastOptions={{ duration: 5000 }} />
         
         <main className="min-h-screen">{children}</main>
+
+        <PageTransition>{children}</PageTransition>
         <Footer />
         <AuthModal />
       </body>

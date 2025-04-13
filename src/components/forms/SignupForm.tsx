@@ -6,77 +6,116 @@ import { api } from '../../lib/api'
 import { errorToast, successToast } from '../../utils/toast'
 import { useModalStore } from '../../store/modalStore'
 import { useRouter } from 'next/navigation'
-import Lottie from 'lottie-react'
+import Lottie from '../ui/LottiePlayer'
 import successAnim from '../../../public/lottie/Success-animation.json'
 import { redirectToDashboard } from '../../lib/helpers'
+import { AxiosError } from 'axios'
 
+import Confetti from 'react-confetti'
+import { useWindowSize } from 'react-use'
+
+
+// Define interface for a County received from the backend
 interface County {
   county_id: number
   county_name: string
 }
 
+// Define interface for a SubCounty received from the backend
 interface SubCounty {
   sub_county_id: number
   sub_county_name: string
   county_id: number
 }
 
+// Define the form data interface using keys that match our DB columns
 interface FormData {
-  firstName: string
-  lastName: string
-  idNumber: string
+  first_name: string
+  last_name: string
+  id_number: string
   gender: string
   role: string
-  county: string
-  subCounty: string
+  county_id: string      // stored as a string to avoid precision issues
+  sub_county_id: string  // stored as a string
   phone: string
   password: string
 }
 
+// Define a specific type for API errors
+interface ApiError {
+  message: string;
+}
+
+/**
+ * SignupForm component renders the registration form.
+ * It expects two props: an array of counties and an array of sub_counties.
+ *
+ * With the nested endpoint approach, you could alternatively fetch and pass
+ * a nested structure, but here we assume flat lists.
+ */
 export default function SignupForm({
   counties = [],
-  subCounties = [],
+  sub_counties = [],
 }: {
   counties: County[]
-  subCounties: SubCounty[]
+  sub_counties: SubCounty[]
 }) {
+  // Initialize form state with keys matching your DB columns.
+  // Note that county_id and sub_county_id are strings.
   const [form, setForm] = useState<FormData>({
-    firstName: '',
-    lastName: '',
-    idNumber: '',
+    first_name: '',
+    last_name: '',
+    id_number: '',
     gender: '',
     role: '',
-    county: '',
-    subCounty: '',
+    county_id: '',
+    sub_county_id: '',
     phone: '',
     password: '',
-  })
-  const [filteredSubs, setFilteredSubs] = useState<SubCounty[]>([])
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [showPass, setShowPass] = useState(false)
+  });
+  
+  // State for holding sub-counties filtered by selected county
+  const [filteredSubs, setFilteredSubs] = useState<SubCounty[]>(sub_counties);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
-  const { closeModal } = useModalStore()
-  const router = useRouter()
+  const { width, height } = useWindowSize();
+  const { closeModal } = useModalStore();
+  const router = useRouter();
 
+  // When the selected county changes, fetch the corresponding sub-counties.
+  // We compare the county_id as a string because our IDs are very large.
   useEffect(() => {
-    if (form.county) {
-      const filtered = subCounties.filter(
-        (s) => s.county_id === parseInt(form.county)
-      )
-      setFilteredSubs(filtered)
+    if (form.county_id) {
+      const fetchSubCounties = async () => {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+        try {
+          const response = await fetch(`${backendUrl}/api/location/sub-counties/${form.county_id}`)
+          const subs = await response.json()
+          setFilteredSubs(subs)
+        } catch (err) {
+          console.error('Error fetching sub-counties:', err)
+          setFilteredSubs([])
+        }
+      }
+      fetchSubCounties()
     }
-  }, [form.county, subCounties])
+  }, [form.county_id])
 
+  // Handle input changes for all form fields
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => setForm({ ...form, [e.target.name]: e.target.value })
+  ) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Validate form data using the schema
     const valid = registerSchema.safeParse(form)
     if (!valid.success) return errorToast('Please fill all fields correctly')
 
     try {
+      // Post the form data to the registration endpoint
       const res = await api.post('/auth/register', form)
       const user = res.data.user
       const redirectPath = redirectToDashboard(user.role)
@@ -87,148 +126,152 @@ export default function SignupForm({
         closeModal()
         router.push(redirectPath)
       }, 1800)
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.message || 'Registration failed. Try again.'
-      errorToast(msg)
+    } catch (err) {
+      // Improved error handling with AxiosError type checking
+      if (err instanceof AxiosError && err.response?.data) {
+        const apiError = err.response.data as ApiError
+        errorToast(apiError.message || 'Registration failed. Try again.')
+      } else {
+        errorToast('Registration failed. Try again.')
+      }
     }
   }
 
   if (showSuccess) {
+  
     return (
-      <div className="flex flex-col items-center justify-center py-6">
-        <Lottie
-          animationData={successAnim}
-          loop={false}
-          className="w-32 h-32"
-        />
-        <p className="text-green-600 font-semibold mt-4">
-          Welcome to AgriConnect 🎉
+      <div className="relative flex flex-col items-center justify-center py-10 min-h-[300px]">
+        <Confetti width={width} height={height} numberOfPieces={250} recycle={false} />
+        <Lottie animationData={successAnim} loop={false} className="w-32 h-32" />
+        <p className="text-green-600 font-semibold mt-6 text-center text-lg">
+          Welcome to Soko Yetu AI 🎉
         </p>
       </div>
     )
   }
 
+  // Render the signup form
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-4 animate-slideIn px-1 md:px-2"
-    >
-      <div className="grid md:grid-cols-2 gap-3">
-        <div>
-          <label className="text-sm text-gray-700">First Name</label>
+    <form onSubmit={handleSubmit} className="space-y-6 animate-slideIn px-1 md:px-2">
+    {/* Personal Info */}
+    <div className="grid md:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm text-gray-700">First Name</label>
+        <div className="relative">
           <input
-            name="firstName"
+            name="first_name"
             placeholder="John"
             onChange={handleChange}
-            className="input"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 focus:ring-2 focus:ring-primary text-sm"
           />
-        </div>
-        <div>
-          <label className="text-sm text-gray-700">Last Name</label>
-          <input
-            name="lastName"
-            placeholder="Mwangi"
-            onChange={handleChange}
-            className="input"
-          />
+          <span className="absolute left-3 top-2.5 text-gray-400">
+            <i className="fas fa-user"></i>
+          </span>
         </div>
       </div>
-
+  
+      <div>
+        <label className="block text-sm text-gray-700">Last Name</label>
+        <div className="relative">
+          <input
+            name="last_name"
+            placeholder="Mwangi"
+            onChange={handleChange}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 focus:ring-2 focus:ring-primary text-sm"
+          />
+          <span className="absolute left-3 top-2.5 text-gray-400">
+            <i className="fas fa-user"></i>
+          </span>
+        </div>
+      </div>
+    </div>
+  
+    <div className="relative">
       <input
-        name="idNumber"
+        name="id_number"
         placeholder="National ID Number"
         onChange={handleChange}
-        className="input"
+        className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 focus:ring-2 focus:ring-primary text-sm"
       />
-
+      <span className="absolute left-3 top-2.5 text-gray-400">
+        <i className="fas fa-id-card"></i>
+      </span>
+    </div>
+  
+    <div className="relative">
       <input
         name="phone"
         placeholder="Phone Number"
         onChange={handleChange}
-        className="input"
+        className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 focus:ring-2 focus:ring-primary text-sm"
       />
-
-      <div className="grid md:grid-cols-2 gap-3">
-        <select
-          name="gender"
-          value={form.gender}
-          onChange={handleChange}
-          className="input"
-          aria-label="Select Gender"
-        >
-          <option value="">Select Gender</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-        </select>
-
-        <select
-          name="role"
-          value={form.role}
-          onChange={handleChange}
-          className="input"
-          aria-label="Select Role"
-        >
-          <option value="">Select Role</option>
-          <option value="farmer">Farmer</option>
-          <option value="buyer">Buyer</option>
-        </select>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-3">
-        <select
-          name="county"
-          value={form.county}
-          onChange={handleChange}
-          className="input"
-          aria-label="Select County"
-        >
-          <option value="">Select County</option>
-          {counties.map((c) => (
-            <option key={c.county_id} value={c.county_id}>
-              {c.county_name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          name="subCounty"
-          value={form.subCounty}
-          onChange={handleChange}
-          className="input"
-          aria-label="Select Sub-County"
-        >
-          <option value="">Select Sub-County</option>
-          {filteredSubs.map((s) => (
-            <option key={s.sub_county_id} value={s.sub_county_id}>
-              {s.sub_county_name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="relative">
-        <input
-          name="password"
-          type={showPass ? 'text' : 'password'}
-          placeholder="Create Password"
-          onChange={handleChange}
-          className="input pr-10"
-        />
-        <i
-          onClick={() => setShowPass(!showPass)}
-          className={`absolute right-3 top-3 cursor-pointer text-gray-500 fas fa-${
-            showPass ? 'eye-slash' : 'eye'
-          }`}
-        />
-      </div>
-
+      <span className="absolute left-3 top-2.5 text-gray-400">
+        <i className="fas fa-phone"></i>
+      </span>
+    </div>
+  
+    {/* Gender & Role */}
+    <div className="grid md:grid-cols-2 gap-4">
+      <select name="gender" title="Select Gender" value={form.gender} onChange={handleChange} className="input">
+        <option value="">Select Gender</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+  
+      <select name="role" title="Select Role" value={form.role} onChange={handleChange} className="input">
+        <option value="">Select Role</option>
+        <option value="farmer">Farmer</option>
+        <option value="buyer">Buyer</option>
+      </select>
+    </div>
+  
+    {/* Location */}
+    <div className="grid md:grid-cols-2 gap-4">
+      <select name="county_id" title="Select County" value={form.county_id} onChange={handleChange} className="input">
+        <option value="">Select County</option>
+        {counties.map((c) => (
+          <option key={c.county_id} value={c.county_id.toString()}>
+            {c.county_name}
+          </option>
+        ))}
+      </select>
+  
+      <select name="sub_county_id" title="Select Sub County" value={form.sub_county_id} onChange={handleChange} className="input">
+        <option value="">Select Sub-County</option>
+        {filteredSubs.map((s) => (
+          <option key={s.sub_county_id} value={s.sub_county_id.toString()}>
+            {s.sub_county_name}
+          </option>
+        ))}
+      </select>
+    </div>
+  
+    {/* Password */}
+    <div className="relative">
+      <input
+        name="password"
+        type={showPass ? 'text' : 'password'}
+        placeholder="Create Password"
+        onChange={handleChange}
+        className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 pr-10 focus:ring-2 focus:ring-primary text-sm"
+      />
+      <span className="absolute left-3 top-2.5 text-gray-400">
+        <i className="fas fa-lock"></i>
+      </span>
       <button
-        type="submit"
-        className="w-full bg-gradient-to-r from-[#297373] to-[#85FFC7] text-white font-bold py-2 rounded-lg shadow hover:shadow-md transform transition hover:scale-105 active:scale-95"
+        type="button"
+        onClick={() => setShowPass(!showPass)}
+        className="absolute right-3 top-2.5 text-gray-500 hover:text-primary"
+        aria-label="Toggle Password"
       >
-        <i className="fas fa-user-plus mr-2"></i> Create Account
+        <i className={`fas fa-${showPass ? 'eye-slash' : 'eye'}`}></i>
       </button>
-    </form>
-  )
+    </div>
+  
+    <button type="submit" className="w-full bg-gradient-to-r from-[#297373] to-[#85FFC7] text-white font-bold py-2 rounded-lg shadow hover:shadow-md transform transition hover:scale-105 active:scale-95">
+      <i className="fas fa-user-plus mr-2"></i> Create Account
+    </button>
+  </form>
+  
+  );
 }

@@ -6,9 +6,26 @@ import { api } from '../../lib/api'
 import { errorToast, successToast } from '../../utils/toast'
 import { useModalStore } from '../../store/modalStore'
 import { useRouter } from 'next/navigation'
-import Lottie from 'lottie-react'
+import Lottie from '../ui/LottiePlayer'
 import successAnim from '../../../public/lottie/Success-animation.json'
 import { redirectToDashboard } from '../../lib/helpers'
+import { AxiosError } from 'axios'
+
+// --- Predefined Credentials (FOR TESTING/DEMO ONLY) ---
+const PREDEFINED_CREDENTIALS = {
+  farmer: {
+    email: 'farmer@test.com',
+    password: 'farmerpassword', // Use simple passwords only for local testing
+    role: 'farmer',
+  },
+  buyer: {
+    email: 'buyer@test.com',
+    password: 'buyerpassword', // Use simple passwords only for local testing
+    role: 'buyer',
+  },
+}
+// --- END OF PREDEFINED CREDENTIALS ---
+
 
 export default function LoginForm() {
   const [form, setForm] = useState({ email: '', password: '' })
@@ -21,14 +38,57 @@ export default function LoginForm() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+ // Helper function to handle successful login simulation/redirect
+ const handleSuccess = (role: 'farmer' | 'buyer') => {
+  const redirectPath = redirectToDashboard(role); // Get path from helper
+  setShowSuccess(true);
+  successToast('Login successful (Demo)'); // Indicate it's a demo login
+  setTimeout(() => {
+    closeModal();
+    router.push(redirectPath);
+  }, 1800);
+}
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // --- Check for Predefined Credentials FIRST ---
+    // WARNING: THIS IS FOR TESTING/DEMO ONLY. REMOVE FOR PRODUCTION.
+    if (
+      form.email === PREDEFINED_CREDENTIALS.farmer.email &&
+      form.password === PREDEFINED_CREDENTIALS.farmer.password
+    ) {
+      console.warn('Using predefined FARMER credentials. Bypassing API call.');
+      handleSuccess('farmer');
+      return; // Stop execution here, don't call API
+    }
+
+    if (
+      form.email === PREDEFINED_CREDENTIALS.buyer.email &&
+      form.password === PREDEFINED_CREDENTIALS.buyer.password
+    ) {
+      console.warn('Using predefined BUYER credentials. Bypassing API call.');
+      handleSuccess('buyer');
+      return; // Stop execution here, don't call API
+    }
+    // --- End of Predefined Credential Check ---
+
+
+    // --- Original Login Logic (if not using predefined credentials) ---
     const result = loginSchema.safeParse(form)
-    if (!result.success) return errorToast('Invalid credentials')
+    if (!result.success) return errorToast('Invalid credentials format') // More specific error
 
     try {
+      console.log('Attempting API login for:', form.email); // Add log for clarity
       const res = await api.post('/auth/login', form)
       const user = res.data.user
+
+      // Ensure user and user.role exist from API response
+      if (!user || !user.role) {
+          errorToast('Login failed: Invalid user data received.');
+          return;
+      }
+
       const redirectPath = redirectToDashboard(user.role)
 
       setShowSuccess(true)
@@ -37,9 +97,15 @@ export default function LoginForm() {
         closeModal()
         router.push(redirectPath)
       }, 1800)
-    } catch (err: any) {
-      const message = err?.response?.data?.message || 'Login failed'
-      errorToast(message)
+    } catch (err) {
+      console.error("API Login Error:", err); // Log the full error
+      if (err instanceof AxiosError && err.response?.data) {
+        const apiError = err.response.data as { message: string }
+        errorToast(apiError.message || "Login failed via API. Try again.");
+    } else {
+        errorToast('Login failed via API. Try again.');
+    }
+
     }
   }
 
