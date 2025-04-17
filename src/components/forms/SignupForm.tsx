@@ -53,53 +53,47 @@ interface ApiError {
  * With the nested endpoint approach, you could alternatively fetch and pass
  * a nested structure, but here we assume flat lists.
  */
-export default function SignupForm({
-  counties = [],
-  sub_counties = [],
-}: {
-  counties: County[]
-  sub_counties: SubCounty[]
-}) {
-  // Initialize form state with keys matching your DB columns.
-  // Note that county_id and sub_county_id are strings.
+export default function SignupForm() {
   const [form, setForm] = useState<FormData>({
-    first_name: '',
-    last_name: '',
-    id_number: '',
-    gender: '',
-    role: '',
-    county_id: '',
-    sub_county_id: '',
-    phone: '',
-    password: '',
-  });
-  
-  // State for holding sub-counties filtered by selected county
-  const [filteredSubs, setFilteredSubs] = useState<SubCounty[]>(sub_counties);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showPass, setShowPass] = useState(false);
+    first_name: '', last_name: '', id_number: '', gender: '', role: '',
+    county_id: '', sub_county_id: '', phone: '', password: '',
+  })
+  const [counties, setCounties] = useState<County[]>([])
+  const [filteredSubs, setFilteredSubs] = useState<SubCounty[]>([])
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [showPass, setShowPass] = useState(false)
 
-  const { width, height } = useWindowSize();
-  const { closeModal } = useModalStore();
-  const router = useRouter();
+  const { width, height } = useWindowSize()
+  const { closeModal } = useModalStore()
+  const router = useRouter()
 
-  // When the selected county changes, fetch the corresponding sub-counties.
-  // We compare the county_id as a string because our IDs are very large.
+  // Load counties once on mount
   useEffect(() => {
-    if (form.county_id) {
-      const fetchSubCounties = async () => {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
-        try {
-          const response = await fetch(`${backendUrl}/api/location/sub-counties/${form.county_id}`)
-          const subs = await response.json()
-          setFilteredSubs(subs)
-        } catch (err) {
-          console.error('Error fetching sub-counties:', err)
-          setFilteredSubs([])
-        }
+    ;(async () => {
+      try {
+        const response = await api.get<County[]>('/location/counties')
+        setCounties(response.data)
+      } catch (err) {
+        console.error('Error fetching counties:', err)
       }
-      fetchSubCounties()
+    })()
+  }, [])
+
+  // Load sub-counties when county_id changes
+  useEffect(() => {
+    if (!form.county_id) {
+      setFilteredSubs([])
+      return
     }
+    ;(async () => {
+      try {
+        const response = await api.get<SubCounty[]>(`/location/sub-counties/${form.county_id}`)
+        setFilteredSubs(response.data)
+      } catch (err) {
+        console.error('Error fetching sub-counties:', err)
+        setFilteredSubs([])
+      }
+    })()
   }, [form.county_id])
 
   // Handle input changes for all form fields
