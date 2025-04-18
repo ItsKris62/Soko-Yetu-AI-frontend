@@ -1,26 +1,44 @@
-export default function OverviewPanel() {
+import React from 'react'
+
+// Props: stats is a record of metric names to values
+type OverviewPanelProps = {
+  stats: Record<string, any>
+}
+
+/**
+ * OverviewPanel displays key farmer statistics in a grid layout.
+ * @param stats - An object where keys are metric identifiers and values are the corresponding metrics.
+ */
+export default function OverviewPanel({ stats }: OverviewPanelProps) {
+  // Show loading state if stats haven't been fetched yet
+  if (!stats) {
     return (
       <div className="bg-white p-6 rounded shadow">
-        <h3 className="text-lg font-semibold mb-2">Personal Information</h3>
-        <p className="text-gray-600">
-          Supplying quality farm produce directly to buyers through AI-driven marketplace insights.
-        </p>
-  
-        <div className="mt-4 grid md:grid-cols-2 gap-6">
-          <div>
-            <p className="font-semibold">Business Hours</p>
-            <p>Mon - Sat: 8:00AM – 6:00PM</p>
-          </div>
-          <div>
-            <p className="font-semibold">Payment Methods</p>
-            <div className="flex gap-2 mt-1">
-              <span className="px-2 py-1 bg-neutral-100 rounded text-xs">M-PESA</span>
-              <span className="px-2 py-1 bg-neutral-100 rounded text-xs">Bank Transfer</span>
-              <span className="px-2 py-1 bg-neutral-100 rounded text-xs">Cash</span>
-            </div>
-          </div>
-        </div>
+        <p className="text-gray-500">Loading overview...</p>
       </div>
     )
   }
+
+  // Convert snake_case or camelCase keys to Title Case labels
+  const formatLabel = (key: string) => {
+    return key
+      .replace(/_/g, ' ')
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (str) => str.toUpperCase())
+  }
+
+  return (
+    <div className="bg-white p-6 rounded shadow">
+      <h3 className="text-lg font-semibold mb-4">Overview</h3>
+      <div className="grid md:grid-cols-2 gap-6">
+        {Object.entries(stats).map(([key, value]) => (
+          <div key={key}>
+            <p className="font-semibold text-gray-700">{formatLabel(key)}</p>
+            <p className="text-gray-900">{value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
   

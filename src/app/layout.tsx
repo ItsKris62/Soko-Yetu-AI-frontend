@@ -46,10 +46,10 @@ export default function RootLayout({
       >
         <Header />
         <Toaster position="top-center" toastOptions={{ duration: 5000 }} />
-        
-        <main className="min-h-screen">{children}</main>
 
-        <PageTransition>{children}</PageTransition>
+        <PageTransition>
+        <main className="min-h-screen">{children}</main>
+          </PageTransition>
         <Footer />
         <AuthModal />
       </body>

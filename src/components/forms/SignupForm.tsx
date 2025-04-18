@@ -111,8 +111,10 @@ export default function SignupForm() {
     try {
       // Post the form data to the registration endpoint
       const res = await api.post('/auth/register', form)
-      const user = res.data.user
-      const redirectPath = redirectToDashboard(user.role)
+      
+      // pull directly from response
+      const { role } = res.data
+      const redirectPath = redirectToDashboard(role)
 
       setShowSuccess(true)
       successToast('Account created')

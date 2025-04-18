@@ -14,7 +14,7 @@ interface User {
   id: string
   firstName: string
   lastName: string
-  role: 'farmer' | 'buyer' | 'other'
+  role: 'farmer' | 'buyer' | 'admin'
   county_id: number
   sub_county_id: number
 }
