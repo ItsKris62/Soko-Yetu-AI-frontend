@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: { appDir: true },
+  experimental: { appDir: true } as any,
   i18n: {
     locales: ['en', 'sw'],
     defaultLocale: 'en',
