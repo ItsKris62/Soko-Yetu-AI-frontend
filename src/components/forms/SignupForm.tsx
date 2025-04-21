@@ -5,6 +5,7 @@ import { registerSchema } from '../../lib/validators'
 import { api } from '../../lib/api'
 import { errorToast, successToast } from '../../utils/toast'
 import { useModalStore } from '../../store/modalStore'
+import { useAuthStore } from '../../store/authStore'
 import { useRouter } from 'next/navigation'
 import Lottie from '../ui/LottiePlayer'
 import successAnim from '../../../public/lottie/Success-animation.json'
@@ -67,6 +68,8 @@ export default function SignupForm() {
   const { closeModal } = useModalStore()
   const router = useRouter()
 
+  const { login } = useAuthStore()
+
   // Load counties once on mount
   useEffect(() => {
     ;(async () => {
@@ -114,6 +117,8 @@ export default function SignupForm() {
       
       // pull directly from response
       const { role } = res.data
+      // mark user as authenticated
+       login()
       const redirectPath = redirectToDashboard(role)
 
       setShowSuccess(true)

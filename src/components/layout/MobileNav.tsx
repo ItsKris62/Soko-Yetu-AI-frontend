@@ -9,6 +9,8 @@ import clsx from 'clsx'
 
 const navItems = [
   { label: 'Market', href: '/market', public: true },
+  { name: 'Resources', href: '/resources', public: true },
+  { name: 'Community', href: '/community', public: true },
   { label: 'My Products', href: '/my-products', public: false },
   { label: 'Insights', href: '/insights', public: false },
   { label: 'Messages', href: '/messages', public: false },

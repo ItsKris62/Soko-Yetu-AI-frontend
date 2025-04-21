@@ -2,8 +2,8 @@ import { z } from 'zod'
 
 // Schema for user login validation 
 export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+  id_number: z.string().nonempty({ message: 'ID number is required' }),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 })
 
 /**
