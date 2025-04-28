@@ -1,22 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useModalStore } from '@/store/modalStore'
 import { useAuthStore } from '@/store/authStore'
 import { Menu, X, Bell } from 'lucide-react'
 import Image from 'next/image'
 import SearchBar from '@/components/market/SearchBar'
+import { api } from '@/lib/api' // Assuming you have an API utility
 
 // Navigation items: public=true always visible; public=false only when authenticated
 const navItems = [
   { name: 'Marketplace', href: '/market', public: true },
-  { name: 'Resources',   href: '/resources', public: true },
-  { name: 'Community',    href: '/community', public: true },
-  { name: 'My Products',  href: '/dashboard', public: false },
-  { name: 'AI Insights',  href: '/insights', public: false },
-  { name: 'Messages',     href: '/messages', public: false },
+  { name: 'Resources', href: '/resources', public: true },
+  { name: 'Community', href: '/community', public: true },
+  { name: 'My Products', href: '/dashboard', public: false },
+  { name: 'AI Insights', href: '/insights', public: false },
+  { name: 'Messages', href: '/messages', public: false },
 ]
 
 export default function Header() {
@@ -25,12 +26,28 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [language, setLanguage] = useState('English')
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
+  const [notificationCount, setNotificationCount] = useState(0) // State for notification count
   const pathname = usePathname()
 
-  // filter nav items based on authentication
-  const filteredLinks = navItems.filter(
-    (item) => item.public || isAuthenticated
-  )
+  // Fetch notifications when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchNotifications = async () => {
+        try {
+          const res = await api.get('/notifications/count') // Replace with your actual endpoint
+          setNotificationCount(res.data.count || 0)
+        } catch (err) {
+          console.error('Error fetching notifications:', err)
+        }
+      }
+      fetchNotifications()
+    } else {
+      setNotificationCount(0) // Reset count for non-authenticated users
+    }
+  }, [isAuthenticated])
+
+  // Filter nav items based on authentication
+  const filteredLinks = navItems.filter((item) => item.public || isAuthenticated)
 
   const toggleLanguage = () => {
     setLanguage((prev) => (prev === 'English' ? 'Kiswahili' : 'English'))
@@ -84,8 +101,16 @@ export default function Header() {
               <div className="hidden sm:block w-48">
                 <SearchBar value="" onChange={() => {}} />
               </div>
-              <button className="text-dark hover:text-primary transition duration-300" aria-label="Notifications">
+              <button
+                className="text-dark hover:text-primary transition duration-300 relative"
+                aria-label={`Notifications (${notificationCount})`}
+              >
                 <Bell size={20} />
+                {notificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {notificationCount}
+                  </span>
+                )}
               </button>
             </>
           )}
@@ -151,13 +176,27 @@ export default function Header() {
                 key={item.name}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className={`transition duration-300 ease-in-out hover:text-primary hover:text-primary hover:text-[#85FFC7] transition-colors duration-300 ${
+                className={`transition duration-300 ease-in-out hover:text-primary hover:text-[#85FFC7] transition-colors duration-300 ${
                   pathname === item.href ? 'text-primary' : 'text-dark'
                 }`}
               >
                 {item.name}
               </Link>
             ))}
+            {isAuthenticated && (
+              <button
+                className="text-dark hover:text-primary transition duration-300 relative text-left"
+                aria-label={`Notifications (${notificationCount})`}
+                onClick={() => setMobileOpen(false)}
+              >
+                Notifications
+                {notificationCount > 0 && (
+                  <span className="ml-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 inline-flex items-center justify-center">
+                    {notificationCount}
+                  </span>
+                )}
+              </button>
+            )}
             <div className="mt-3 border-t pt-3 flex justify-between">
               <span>Language</span>
               <button
