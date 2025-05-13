@@ -230,7 +230,7 @@ export const fetchMarketplaceData = async (
       params: { page, limit, ...filters },
     });
     return response.data;
-  } catch (error) {
+  } catch {
     // Simulate backend response for testing
     let filteredProducts = dummyProducts;
 

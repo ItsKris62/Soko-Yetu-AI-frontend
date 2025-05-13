@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import { signup } from '@/utils/api';
 import { motion } from 'framer-motion';
 import Button from '@/components/common/Button';
-import Lottie from 'lottie-react';
+import dynamic from 'next/dynamic';
+// import Lottie from 'lottie-react';
+
+// Dynamically import Lottie to avoid SSR issues
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
+
+
 import successAnimation from '@/../public/animations/success.json';
 import errorAnimation from '@/../public/animations/error.json';
 

@@ -29,7 +29,7 @@ export default function MarketplacePage() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="py-12 px-6 bg-gray-50">
+    <div className="py-20 pb-12 px-6 bg-gray-100">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-3xl font-bold text-gray-800 mb-2 slide-up">Marketplace</h2>
         <p className="text-lg text-gray-600 mb-8 slide-up">

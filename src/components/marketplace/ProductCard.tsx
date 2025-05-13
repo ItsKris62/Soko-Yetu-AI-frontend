@@ -60,7 +60,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             Contact Seller
           </Button>
           <Link href={`/products/${product.id}`}>
-            <Button className="flex-1 bg-white border border-gray-300 text-gray-800 hover:bg-gray-100 transition-colors rounded-md">
+            <Button className="flex-1 bg-transparent border border-[#278783] text-[#278783] hover:bg-[#278783] hover:text-white transition-colors rounded-md">
               Details
             </Button>
           </Link>

@@ -12,22 +12,22 @@
 
 @font-face {
   font-family: 'Leonetta Serif';
-  src: url('/fonts/LeonettaSerif.ttf') format('truetype');
+  src: url('/soko-yetu-frontend/public/fonts/Leonetta-Serif.otf') format('otf');
 }
 
 @font-face {
   font-family: 'LTSipText-Regular';
-  src: url('/fonts/LTSipText-Regular.ttf') format('truetype');
+  src: url('/soko-yetu-frontend/public/fonts/LTSipText-Regular.ttf') format('truetype');
 }
 
 @font-face {
-  font-family: 'Leonetta Serif';
-  src: url('/fonts/Leonetta-Serif.ttf') format('truetype');
+  font-family: 'Delon';
+  src: url('/soko-yetu-frontend/public/fonts/Delon.ttf') format('truetype');
 }
 
 @font-face {
-  font-family: 'LTSipText-Regular';
-  src: url('/fonts/LTSipText-Regular.ttf') format('truetype');
+  font-family: 'Mascefla';
+  src: url('/soko-yetu-frontend/public/fonts/Mascefla.ttf') format('truetype');
 }
 
 /* Apply fonts */
@@ -86,6 +86,16 @@ body {
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+/* Profile header */
+.profile-header {
+  background: linear-gradient(135deg, #278783, #1f6b67);
+}
+
+/* Tab navigation */
+.tab-active {
+  border-bottom: 2px solid #278783;
 }
 
 @media (max-width: 640px) {

@@ -80,3 +80,39 @@ export interface MarketplaceResponse {
   categories: string[];
   counties: { id: number; name: string }[];
 }
+
+export interface UserStats {
+  totalProductsListed: number;
+  completedTransactions: number;
+  rating: number;
+}
+
+export interface Transaction {
+  id: number;
+  buyer_id: number;
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  total_price: number;
+  status: string;
+  created_at: string;
+}
+
+export interface Review {
+  id: number;
+  product_id: number;
+  product_name: string;
+  reviewer_id: number;
+  reviewer_name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
+
+export interface DashboardResponse {
+  user: User;
+  stats: UserStats;
+  products: Product[];
+  transactions: Transaction[];
+  reviews: Review[];
+}
