@@ -1,11 +1,11 @@
 // Axios setup for API calls
 
 import axios from 'axios';
-import { LoginRequest, LoginResponse, SignupRequest, SignupResponse, InsightsPreviewData, FilterParams, MarketplaceResponse } from '../types/api';
+import { LoginRequest, LoginResponse, SignupRequest, SignupResponse, InsightsPreviewData, FilterParams, MarketplaceResponse, FeedbackRequest, FeedbackResponse } from '../types/api';
 import { Product } from '@/types/product';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000', // Set in .env.local
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', 
   headers: {
     'Content-Type': 'application/json',
   },
@@ -194,6 +194,7 @@ export const fetchCategories = async (): Promise<string[]> => {
     return ['Cereals', 'Vegetables', 'Fruits', 'Legumes', 'Tubers', 'Dairy'];
   }
 };
+
 
 
 // Feedback API call with dummy data fallback

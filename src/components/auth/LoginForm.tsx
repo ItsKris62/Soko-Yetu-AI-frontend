@@ -9,6 +9,9 @@ import Button from '@/components/common/Button';
 import dynamic from 'next/dynamic';
 // import Lottie from 'lottie-react';
 
+import loadingAnimation from '@/../public/animations/loading.json';
+
+
 // Dynamically import Lottie to avoid SSR issues
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
@@ -27,7 +30,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [statusData, setStatusData] = useState<{
-    animation: any;
+    animation: unknown;
     title: string;
     message: string;
   } | null>(null);
@@ -76,6 +79,15 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     }
   };
 
+  const handleTryAgain = () => {
+    setShowStatus(false);
+    setStatusData(null);
+    setError('');
+    // Optionally clear password, or both email and password
+    setPassword(''); 
+    // setEmail(''); // Uncomment to clear email as well
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -90,6 +102,15 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
           </div>
           <h3 className="text-xl font-bold text-gray-800 mt-4">{statusData.title}</h3>
           <p className="text-gray-600 mt-2">{statusData.message}</p>
+          {statusData.title === 'Login Failed' && (
+            <Button
+              onClick={handleTryAgain}
+              variant="secondary" 
+              className="mt-6"
+            >
+              Try Again
+            </Button>
+          )}
         </div>
       ) : (
         <>
@@ -157,17 +178,16 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
             <Button
               type="submit"
               variant="primary"
-              className="w-full py-2 px-4 flex justify-center items-center"
+              className="w-full py-2 px-4 flex justify-center items-center border border-gray-300"
               disabled={isLoading}
             >
               {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                <div className="flex items-center justify-center">
+                  <div className="w-6 h-6 mr-2"> {/* Adjust size as needed */}
+                    <Lottie animationData={loadingAnimation} loop={true} />
+                  </div>
                   Signing in...
-                </>
+                </div>
               ) : (
                 'Sign In'
               )}
@@ -175,7 +195,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
           </form>
 
           <div className="text-center text-sm text-gray-600">
-            Don't have an account?{' '}
+            Dont have an account?{' '}
             <button 
               type="button"
               onClick={() => router.push('/auth/register')}

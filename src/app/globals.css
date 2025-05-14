@@ -12,22 +12,22 @@
 
 @font-face {
   font-family: 'Leonetta Serif';
-  src: url('/soko-yetu-frontend/public/fonts/Leonetta-Serif.otf') format('otf');
+  src: url('/fonts/Leonetta-Serif.otf') format('otf');
 }
 
 @font-face {
   font-family: 'LTSipText-Regular';
-  src: url('/soko-yetu-frontend/public/fonts/LTSipText-Regular.ttf') format('truetype');
+  src: url('/fonts/LTSipText-Regular.ttf') format('truetype');
 }
 
 @font-face {
   font-family: 'Delon';
-  src: url('/soko-yetu-frontend/public/fonts/Delon.ttf') format('truetype');
+  src: url('/fonts/Delon.ttf') format('truetype');
 }
 
 @font-face {
   font-family: 'Mascefla';
-  src: url('/soko-yetu-frontend/public/fonts/Mascefla.ttf') format('truetype');
+  src: url('/fonts/Mascefla.ttf') format('truetype');
 }
 
 /* Apply fonts */
