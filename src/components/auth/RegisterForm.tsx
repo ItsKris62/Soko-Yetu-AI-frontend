@@ -15,6 +15,11 @@ const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 import successAnimation from '@/../public/animations/success.json';
 import errorAnimation from '@/../public/animations/error.json';
 
+interface Country {
+  id: string;
+  name: string;
+}
+
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
     first_name: '',
@@ -31,23 +36,29 @@ const RegisterForm = () => {
 
   const [countries, setCountries] = useState([]);
   const [counties, setCounties] = useState([]);
-  const [subCounties, setSubCounties] = useState([]);
+  const [subCounties, setSubCounties] = useState<Country[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [statusData, setStatusData] = useState<{
-    animation: any;
+    animation: object;
     title: string;
     message: string;
   } | null>(null);
   
   const router = useRouter();
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+
 
   // Fetch countries on mount
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const response = await fetch('/api/locations/countries');
+        // const response = await fetch('/api/locations/countries');
+        // Use the API_BASE_URL
+        const response = await fetch(`${API_BASE_URL}/locations/countries`);
+        
         const data = await response.json();
         setCountries(data);
       } catch (error) {
@@ -62,7 +73,10 @@ const RegisterForm = () => {
     if (formData.country_id) {
       const fetchCounties = async () => {
         try {
-          const response = await fetch(`/api/locations/counties?country_id=${formData.country_id}`);
+          // const response = await fetch(`/api/locations/counties?country_id=${formData.country_id}`);
+          // Use the API_BASE_URL
+          const response = await fetch(`${API_BASE_URL}/locations/counties?country_id=${formData.country_id}`);
+         
           const data = await response.json();
           setCounties(data);
           setFormData(prev => ({ ...prev, county_id: '', sub_county_id: '' }));
@@ -79,7 +93,11 @@ const RegisterForm = () => {
     if (formData.county_id) {
       const fetchSubCounties = async () => {
         try {
-          const response = await fetch(`/api/locations/sub-counties?county_id=${formData.county_id}`);
+          // const response = await fetch(`/api/locations/sub-counties?county_id=${formData.county_id}`);
+
+          // Use the API_BASE_URL
+          const response = await fetch(`${API_BASE_URL}/locations/sub-counties?county_id=${formData.county_id}`);
+          
           const data = await response.json();
           setSubCounties(data);
           setFormData(prev => ({ ...prev, sub_county_id: '' }));
@@ -278,7 +296,7 @@ const RegisterForm = () => {
                   required
                 >
                   <option value="">Select Country</option>
-                  {countries.map((country: any) => (
+                  {countries.map((country: Country) => (
                     <option key={country.id} value={country.id}>{country.name}</option>
                   ))}
                 </select>
@@ -298,7 +316,7 @@ const RegisterForm = () => {
                   required
                 >
                   <option value="">Select County</option>
-                  {counties.map((county: any) => (
+                  {counties.map((county: Country) => (
                     <option key={county.id} value={county.id}>{county.name}</option>
                   ))}
                 </select>
@@ -317,7 +335,7 @@ const RegisterForm = () => {
                   disabled={!formData.county_id}
                 >
                   <option value="">Select Sub-County</option>
-                  {subCounties.map((subCounty: any) => (
+                  {subCounties.map((subCounty: Country) => (
                     <option key={subCounty.id} value={subCounty.id}>{subCounty.name}</option>
                   ))}
                 </select>
