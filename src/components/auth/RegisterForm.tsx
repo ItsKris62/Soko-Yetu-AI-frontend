@@ -34,7 +34,11 @@ const RegisterForm = () => {
     role: 'farmer', // Default role
     country_id: '',
     county_id: '',
-    sub_county_id: ''
+    sub_county_id: '',
+    gender: '',         
+    id_number: '',
+    date_of_birth: '',
+    // avatar_url: '', // Add avatar_url field     
   });
 
   const [countries, setCountries] = useState([]);
@@ -50,7 +54,9 @@ const RegisterForm = () => {
   } | null>(null);
   
   const router = useRouter();
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+  : 'http://localhost:5000/api';
 
 
 
@@ -130,34 +136,52 @@ const RegisterForm = () => {
       return;
     }
 
-    try {
-      const { confirm_password, ...signupData } = formData;
-      await signup(signupData);
-      
-      setStatusData({
-        animation: successAnimation,
-        title: 'Registration Successful',
-        message: 'Redirecting to login page...'
-      });
-      setShowStatus(true);
-      
-      setTimeout(() => {
-        router.push('/auth/login');
-      }, 2000);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred during registration';
-      setError(errorMessage);
-      
-      setStatusData({
-        animation: errorAnimation,
-        title: 'Registration Failed',
-        message: errorMessage
-      });
-      setShowStatus(true);
-    } finally {
-      setIsLoading(false);
+
+// build payload
+  const { confirm_password, ...payload } = formData;
+
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/auth/register`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }
+    );
+    const data = await res.json();
+
+    if (!res.ok) {
+      // backend will send { error: '...' }
+      throw new Error(data.error || data.message || 'Registration failed');
     }
-  };
+
+    // success!
+    setStatusData({
+      animation: successAnimation,
+      title: 'Registration Successful',
+      message: 'Redirecting to login page...',
+    });
+    setShowStatus(true);
+    setTimeout(() => router.push('/auth/login'), 2000);
+
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    setError(message);
+    setStatusData({
+      animation: errorAnimation,
+      title: 'Registration Failed',
+      message,
+    });
+    setShowStatus(true);
+    setTimeout(() => {
+      setShowStatus(false);
+    }, 1000); // Hide after 1 second
+
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <motion.div
@@ -343,6 +367,54 @@ const RegisterForm = () => {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Gender */}
+          <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Gender
+  </label>
+  <select
+    name="gender"
+    value={formData.gender}
+    onChange={handleChange}
+    required
+    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary transition-all"
+  >
+    <option value="">Select gender</option>
+    <option value="male">Male</option>
+    <option value="female">Female</option>
+  </select>
+          </div>
+            {/* ID Number */}
+          <div>
+  <label htmlFor="id_number" className="block text-sm font-medium text-gray-700 mb-1">
+    ID Number
+  </label>
+  <input
+    id="id_number"
+    type="text"
+    name="id_number"
+    value={formData.id_number}
+    onChange={handleChange}
+    required
+    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary transition-all"
+  />
+          </div>
+            {/* Date of Birth */}
+          <div>
+            <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700 mb-1">
+                Date of Birth
+              </label>
+                  <input
+                    id="date_of_birth"
+                    type="date"
+                    name="date_of_birth"
+                    value={formData.date_of_birth}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary transition-all"
+                     />
             </div>
 
             <div>

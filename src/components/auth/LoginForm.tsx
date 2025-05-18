@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { motion } from 'framer-motion';
 import Button from '@/components/common/Button';
 import dynamic from 'next/dynamic';
+import { setToken } from '@/utils/auth'; 
 // import Lottie from 'lottie-react';
 
 import loadingAnimation from '@/../public/animations/loading.json';
@@ -21,9 +22,11 @@ import errorAnimation from '@/../public/animations/error.json';
 
 interface LoginFormProps {
   onSuccess?: () => void;
+  onNavigateToRegister?: () => void;
+
 }
 
-const LoginForm = ({ onSuccess }: LoginFormProps) => {
+const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -44,8 +47,9 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     setError('');
 
     try {
-      const response = await login({ email, password });
-      setUser(response.user);
+      const { user, token } = await login({ email, password });
+      setToken(token);            // ← save JWT
+      setUser(user);
       setIsAuthenticated(true);
       
       // Show success animation
@@ -86,6 +90,14 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     // Optionally clear password, or both email and password
     setPassword(''); 
     // setEmail(''); // Uncomment to clear email as well
+  };
+
+  const handleSignUpClick = () => {
+    if (onNavigateToRegister) {
+      onNavigateToRegister();
+    } else {
+      router.push('/auth/register');
+    }
   };
 
   return (
@@ -198,7 +210,8 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
             Dont have an account?{' '}
             <button 
               type="button"
-              onClick={() => router.push('/auth/register')}
+              // onClick={() => router.push('/auth/register')}
+              onClick={handleSignUpClick}
               className="font-medium text-primary hover:text-primary-dark"
             >
               Sign up

@@ -5,7 +5,7 @@ import { LoginRequest, LoginResponse, SignupRequest, SignupResponse, InsightsPre
 import { Product } from '@/types/product';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', 
+  baseURL: (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000') + '/api/auth', 
   headers: {
     'Content-Type': 'application/json',
   },
@@ -136,7 +136,7 @@ const dummyInsights: InsightsPreviewData = {
 // Login API call with dummy data fallback
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
   try {
-    const response = await api.post<LoginResponse>('/api/login', data);
+    const response = await api.post<LoginResponse>('/login', data);
     return response.data;
   } catch {
     // Simulate backend response for testing
@@ -150,7 +150,7 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
 // Signup API call with dummy data fallback
 export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
   try {
-    const response = await api.post<SignupResponse>('/api/register', data);
+    const response = await api.post<SignupResponse>('/register', data);
     return response.data;
   } catch {
     // Simulate successful signup for testing
