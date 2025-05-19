@@ -1,6 +1,4 @@
 // handles category filtering
-
-
 'use client';
 
 import { useState, useEffect } from 'react';

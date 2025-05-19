@@ -44,6 +44,26 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(''); // Clear previous errors
+
+    // Client-side validation
+    if (!email.trim()) {
+      setError('Email is required.');
+      setIsLoading(false);
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      setIsLoading(false);
+      return;
+    }
+    if (!password) { // Password can't be just spaces, so no trim needed usually
+      setError('Password is required.');
+      setIsLoading(false);
+      return;
+    }
+
     setError('');
 
     try {

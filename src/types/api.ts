@@ -2,6 +2,8 @@
 
 import { User } from './user';
 
+import { Product } from './product';
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -115,4 +117,22 @@ export interface DashboardResponse {
   products: Product[];
   transactions: Transaction[];
   reviews: Review[];
+}
+
+export interface DashboardData {
+  user: User;
+  stats: {
+    total_products: number;
+    completed_transactions: number;
+    average_rating: number;
+  };
+  transactions: Transaction[];
+  reviews: Review[];
+  products: Product[];
+}
+
+export interface LocationData {
+  countries: { id: number; name: string }[];
+  counties: { id: number; name: string; country_id: number }[];
+  subcounties: { id: number; name: string; county_id: number }[];
 }

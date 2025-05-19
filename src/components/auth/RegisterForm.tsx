@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signup } from '@/utils/api';
+// import { signup } from '@/utils/api'; // signup function not used directly, fetch is used
 import { motion } from 'framer-motion';
 import Button from '@/components/common/Button';
 import dynamic from 'next/dynamic';
@@ -17,6 +17,8 @@ const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
 import successAnimation from '@/../public/animations/success.json';
 import errorAnimation from '@/../public/animations/error.json';
+import { useAuthStore } from '@/stores/authStore'; // Import auth store
+import { setToken } from '@/utils/auth'; // Import setToken utility
 
 interface Country {
   id: string;
@@ -54,6 +56,7 @@ const RegisterForm = () => {
   } | null>(null);
   
   const router = useRouter();
+  const { setUser, setIsAuthenticated } = useAuthStore(); // Get setters from auth store
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
   ? `${process.env.NEXT_PUBLIC_API_URL}/api`
   : 'http://localhost:5000/api';
@@ -156,14 +159,25 @@ const RegisterForm = () => {
       throw new Error(data.error || data.message || 'Registration failed');
     }
 
-    // success!
+    // Registration success!
+    // Assuming the backend returns user and token upon successful registration, similar to login
+    if (data.user && data.token) {
+      setToken(data.token); // Save JWT
+      setUser(data.user);
+      setIsAuthenticated(true);
+    } else {
+      // If token/user is not returned, the user is registered but not "logged in" in frontend state.
+      // They would be redirected to dashboard but header might not update until manual login.
+      console.warn('Registration successful, but token/user data not returned from API. User may need to log in manually.');
+    }
+    
     setStatusData({
       animation: successAnimation,
       title: 'Registration Successful',
-      message: 'Redirecting to login page...',
+      message: 'Redirecting to your dashboard...',
     });
     setShowStatus(true);
-    setTimeout(() => router.push('/auth/login'), 2000);
+    setTimeout(() => router.push('/dashboard'), 2000);
 
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

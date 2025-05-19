@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { Product } from '../../types/product';
+import { fetchCategories, fetchCounties, addProduct } from '../../utils/api';
 import Button from '../common/Button';
-import Modal from '../common/Modal';
 
 type ProductFormProps = {
   onSubmit: (data: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
@@ -15,24 +15,66 @@ type ProductFormProps = {
 type FormData = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
 
 export default function ProductForm({ onSubmit, onClose, initialData }: ProductFormProps) {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ defaultValues: initialData });
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({ defaultValues: initialData });
   const [imagePreview, setImagePreview] = useState<string | undefined>(initialData?.image_url);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [counties, setCounties] = useState<{ id: number; name: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const fetchedCategories = await fetchCategories();
+        const fetchedCounties = await fetchCounties();
+        setCategories(fetchedCategories);
+        setCounties(fetchedCounties);
+      } catch (err) {
+        setError('Failed to load categories or counties.');
+      }
+    };
+    loadData();
+  }, []);
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
+      // Simulate Cloudinary upload (replace with actual Cloudinary upload logic)
+      const url = URL.createObjectURL(file); // Temporary preview
       setImagePreview(url);
+      setValue('image_url', url); // Set the URL in the form (replace with actual Cloudinary URL)
     }
   };
 
-  const onFormSubmit: SubmitHandler<FormData> = (data) => {
-    onSubmit(data);
-    onClose();
+  const onFormSubmit: SubmitHandler<FormData> = async (data) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const productData: Omit<Product, 'id' | 'created_at' | 'updated_at'> = {
+        ...data,
+        farmer_id: initialData?.farmer_id || 1, // Replace with actual farmer_id from auth store
+        category_id: parseInt(data.category_id as any), // Convert string to number
+        county_id: parseInt(data.county_id as any), // Convert string to number
+        country_id: 1, // Assuming Kenya for now (fetch from user data)
+        ai_suggested_price: data.ai_suggested_price || 0,
+        ai_quality_grade: data.ai_quality_grade || '0',
+      };
+      await addProduct(productData);
+      onSubmit(productData);
+      onClose();
+    } catch (err) {
+      setError('Failed to save product.');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  if (error) {
+    return <div className="text-red-500 text-center">{error}</div>;
+  }
+
   return (
-    <Modal onClose={onClose}>
+    <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center">{initialData ? 'Edit Product' : 'Add Product'}</h2>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <div className="mb-4">
@@ -75,47 +117,56 @@ export default function ProductForm({ onSubmit, onClose, initialData }: ProductF
             className="w-full p-2 border border-gray-300 rounded"
           />
           {imagePreview && <img src={imagePreview} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded" />}
+          <input
+            type="hidden"
+            {...register('image_url', { required: 'Image is required' })}
+          />
+          {errors.image_url && <p className="text-red-500 text-sm mt-1">{errors.image_url.message}</p>}
         </div>
         <div className="mb-4">
-          <label htmlFor="category_name" className="block text-gray-700 mb-1">Category</label>
+          <label htmlFor="category_id" className="block text-gray-700 mb-1">Category</label>
           <select
-            id="category_name"
-            {...register('category_name', { required: 'Category is required' })}
+            id="category_id"
+            {...register('category_id', { required: 'Category is required' })}
             className="w-full p-2 border border-gray-300 rounded"
           >
             <option value="">Select Category</option>
-            <option value="Cereals">Cereals</option>
-            <option value="Vegetables">Vegetables</option>
-            <option value="Fruits">Fruits</option>
-            <option value="Legumes">Legumes</option>
-            <option value="Tubers">Tubers</option>
+            {categories.map((category, index) => (
+              <option key={category} value={index + 1}>{category}</option>
+            ))}
           </select>
-          {errors.category_name && <p className="text-red-500 text-sm mt-1">{errors.category_name.message}</p>}
+          {errors.category_id && <p className="text-red-500 text-sm mt-1">{errors.category_id.message}</p>}
         </div>
         <div className="mb-4">
-          <label htmlFor="county_name" className="block text-gray-700 mb-1">County</label>
+          <label htmlFor="county_id" className="block text-gray-700 mb-1">County</label>
           <select
-            id="county_name"
-            {...register('county_name', { required: 'County is required' })}
+            id="county_id"
+            {...register('county_id', { required: 'County is required' })}
             className="w-full p-2 border border-gray-300 rounded"
           >
             <option value="">Select County</option>
-            <option value="Nakuru County">Nakuru County</option>
-            <option value="Kiambu County">Kiambu County</option>
-            <option value="Murang’a County">Murang’a County</option>
-            <option value="Machakos County">Machakos County</option>
-            <option value="Nyandarua County">Nyandarua County</option>
-            <option value="Nairobi County">Nairobi County</option>
+            {counties.map((county) => (
+              <option key={county.id} value={county.id}>{county.name}</option>
+            ))}
           </select>
-          {errors.county_name && <p className="text-red-500 text-sm mt-1">{errors.county_name.message}</p>}
+          {errors.county_id && <p className="text-red-500 text-sm mt-1">{errors.county_id.message}</p>}
         </div>
-        <Button
-          type="submit"
-          className="w-full bg-[#278783] hover:bg-[#1f6b67] text-white transition-colors"
-        >
-          {initialData ? 'Update Product' : 'Add Product'}
-        </Button>
+        <div className="flex gap-4">
+          <Button
+            type="submit"
+            className="w-full bg-[#278783] hover:bg-[#1f6b67] text-white transition-colors"
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : initialData ? 'Update Product' : 'Add Product'}
+          </Button>
+          <Button
+            onClick={onClose}
+            className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 transition-colors"
+          >
+            Cancel
+          </Button>
+        </div>
       </form>
-    </Modal>
+    </div>
   );
-}
+} 

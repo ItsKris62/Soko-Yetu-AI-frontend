@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { fetchDashboardData, fetchLocationData, updateUserProfile } from '../../utils/api';
+import { fetchDashboardData, fetchLocationData, updateUserProfile, createProduct } from '../../utils/api'; // Added createProduct
 import { DashboardData, LocationData } from '../../types/api';
+import { User } from '../../types/user';
+import { Product } from '../../types/product';
 import UserStats from '../../components/dashboard/UserStats';
 import ProductForm from '../../components/products/ProductForm';
 import Modal from '../../components/common/Modal';
@@ -11,29 +13,48 @@ import Button from '../../components/common/Button';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 export default function DashboardPage() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, setUser } = useAuthStore();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showProductForm, setShowProductForm] = useState(false);
   const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [productFormLoading, setProductFormLoading] = useState(false);
+  const [productFormError, setProductFormError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      const loadDashboard = async () => {
-        const data = await fetchDashboardData(user.id, user.role || 'buyer');
-        setDashboardData(data);
+      const loadData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const [dashboard, locations] = await Promise.all([
+            fetchDashboardData(user.id, user.role || 'buyer'),
+            fetchLocationData(),
+          ]);
+          setDashboardData(dashboard);
+          setLocationData(locations);
+        } catch (err) {
+          setError('Failed to load dashboard data.');
+        } finally {
+          setLoading(false);
+        }
       };
-      const loadLocationData = async () => {
-        const data = await fetchLocationData();
-        setLocationData(data);
-      };
-      loadDashboard();
-      loadLocationData();
+      loadData();
     }
   }, [isAuthenticated, user]);
 
-  if (!isAuthenticated || !dashboardData || !user) {
+  if (!isAuthenticated || !user) {
     return <div className="py-12 px-6 text-center text-gray-600">Please log in to view your dashboard.</div>;
+  }
+
+  if (loading) {
+    return <div className="py-12 px-6 text-center text-gray-600">Loading...</div>;
+  }
+
+  if (error || !dashboardData) {
+    return <div className="py-12 px-6 text-center text-red-500">{error || 'Failed to load dashboard data.'}</div>;
   }
 
   const role = user.role || 'buyer';
@@ -136,7 +157,7 @@ export default function DashboardPage() {
                         />
                         <h4 className="text-lg font-semibold text-gray-800">{product.name}</h4>
                         <p className="text-gray-600">Price: KSH {product.price}</p>
-                        {role === 'buyer' && (
+                        {role === 'buyer' && typeof (product as any).quantity === 'number' && (
                           <p className="text-gray-600">Quantity: {(product as any).quantity}</p>
                         )}
                       </div>
@@ -189,7 +210,7 @@ export default function DashboardPage() {
             )}
 
             {activeTab === 'settings' && (
-              <SettingsTab user={dashboardData.user} locationData={locationData} />
+              <SettingsTab user={dashboardData.user} locationData={locationData} setUser={setUser} />
             )}
           </div>
         </div>
@@ -197,12 +218,35 @@ export default function DashboardPage() {
 
       {showProductForm && (
         <Modal onClose={() => setShowProductForm(false)}>
+          {productFormError && <p className="text-red-500 mb-4">{productFormError}</p>}
           <ProductForm
-            onSubmit={async (data) => {
-              // Simulate adding product (replace with real API call)
-              console.log('New product:', data);
+            onSubmit={async (formData) => {
+              if (!user) return;
+              setProductFormLoading(true);
+              setProductFormError(null);
+              try {
+                // Assuming formData includes farmer_id or it's added here
+                // The Product type might need adjustment based on what ProductForm provides
+                const newProductData = { ...formData, farmer_id: user.id };
+                const newProduct = await createProduct(newProductData as Omit<Product, 'id' | 'created_at' | 'updated_at'>);
+                setDashboardData((prev) => {
+                  if (!prev) return null;
+                  return {
+                    ...prev,
+                    products: [...prev.products, newProduct],
+                    stats: { ...prev.stats, total_products: prev.stats.total_products + 1 },
+                  };
+                });
+                setShowProductForm(false);
+              } catch (err) {
+                setProductFormError(err instanceof Error ? err.message : 'Failed to add product.');
+              } finally {
+                setProductFormLoading(false);
+              }
             }}
             onClose={() => setShowProductForm(false)}
+            initialData={{ farmer_id: user.id } as Partial<Product>} // Use Partial<Product> for more flexibility
+            isLoading={productFormLoading}
           />
         </Modal>
       )}
@@ -214,20 +258,29 @@ export default function DashboardPage() {
 interface SettingsTabProps {
   user: User;
   locationData: LocationData | null;
+  setUser: (user: User | null) => void;
 }
 
-function SettingsTab({ user, locationData }: SettingsTabProps) {
+function SettingsTab({ user, locationData, setUser }: SettingsTabProps) {
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<User>({ defaultValues: user });
   const [loading, setLoading] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(user.country_id || '');
   const [selectedCounty, setSelectedCounty] = useState(user.county_id || '');
 
+  const resetFormValues = useCallback(() => {
+    setValue('email', user.email);
+    setValue('phone_number', user.phone_number);
+    setValue('country_id', user.country_id);
+    setValue('county_id', user.county_id);
+    setValue('sub_county_id', user.sub_county_id);
+    setSelectedCountry(user.country_id || '');
+    setSelectedCounty(user.county_id || '');
+  }, [user, setValue]);
+
   useEffect(() => {
-    if (locationData) {
-      setSelectedCountry(user.country_id || '');
-      setSelectedCounty(user.county_id || '');
-    }
-  }, [locationData, user]);
+    resetFormValues();
+  }, [user, resetFormValues]); // locationData is implicitly handled if user object changes due to locationData related fetches
+
 
   const onSubmit: SubmitHandler<User> = async (data) => {
     setLoading(true);
@@ -239,9 +292,21 @@ function SettingsTab({ user, locationData }: SettingsTabProps) {
         county_id: data.county_id,
         sub_county_id: data.sub_county_id,
       });
+      // Update user in auth store
+      setUser({
+        ...user,
+        email: data.email,
+        phone_number: data.phone_number,
+        country_id: data.country_id,
+        county_id: data.county_id,
+        sub_county_id: data.sub_county_id,
+        country_name: locationData?.countries.find(c => c.id === data.country_id)?.name,
+        county_name: locationData?.counties.find(c => c.id === data.county_id)?.name,
+        sub_county_name: locationData?.subcounties.find(s => s.id === data.sub_county_id)?.name,
+      });
       alert('Profile updated successfully!');
     } catch (error) {
-      alert('Failed to update profile.');
+      alert(error instanceof Error ? error.message : 'Failed to update profile.');
     } finally {
       setLoading(false);
     }

@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import Lottie from 'react-lottie';
+import dynamic from 'next/dynamic';
 import { useAuthStore } from '../../stores/authStore';
 import { getUserFromToken } from '../../utils/auth';
 import { submitFeedback } from '../../utils/api';
 import { showToast } from '../common/Toast';
 import Button from '@/components/common/Button';
+
+const Lottie = dynamic(() => import('react-lottie'), { ssr: false });
 
 type FeedbackForm = {
   name: string;
@@ -44,16 +46,24 @@ export default function FeedbackCTA() {
         name: data.name,
       };
       const response = await submitFeedback(feedbackData);
-      setShowAnimation(true);
+      
+      // Load animation data first
       const res = await fetch('/animations/sending-success-animation.json');
       setAnimationData(await res.json());
+      setShowAnimation(true); // Then show animation
       showToast(response.message, 'success');
-      reset(); // Reset form after successful submission
+      // We will reset the form after the animation completes
     } catch {
       showToast('Failed to submit feedback', 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAnimationComplete = () => {
+    reset(); // Reset form fields
+    setShowAnimation(false); // Hide animation
+    setAnimationData(null); // Optional: clear animation data
   };
 
   return (
@@ -92,7 +102,6 @@ export default function FeedbackCTA() {
           <Button
             type="submit"
             variant='primary'
-            size="lg"
             className="w-full bg-primary hover:bg-light text-white transition-colors"
             disabled={loading}
           >
@@ -102,9 +111,15 @@ export default function FeedbackCTA() {
         {showAnimation && animationData && (
           <div className="mt-6 flex justify-center">
             <Lottie
-              options={{ loop: false, autoplay: true, animationData }}
+              options={{ loop: false, autoplay: true, animationData: animationData }}
               height={100}
               width={100}
+              eventListeners={[
+                {
+                  eventName: 'complete',
+                  callback: handleAnimationComplete,
+                },
+              ]}
             />
           </div>
         )}
