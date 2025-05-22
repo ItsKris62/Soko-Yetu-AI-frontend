@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { fetchDashboardData, fetchLocationData, updateUserProfile, createProduct } from '../../utils/api'; // Added createProduct
+import { fetchDashboardData, fetchLocationData, updateUserProfile, uploadImage } from '../../utils/api'; // Added createProduct
 import { DashboardData, LocationData } from '../../types/api';
 import { User } from '../../types/user';
 import { Product } from '../../types/product';
@@ -66,7 +66,7 @@ export default function DashboardPage() {
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
           <div className="flex items-center gap-6">
             <img
-              src={user.avatar_url || '/images/placeholder.jpg'}
+              src={user.avatar_url || 'https://res.cloudinary.com/veriwoks-sokoyetu/image/upload/v1739801586/unknown-user.png'}
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover"
             />
@@ -266,47 +266,76 @@ function SettingsTab({ user, locationData, setUser }: SettingsTabProps) {
   const [loading, setLoading] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(user.country_id || '');
   const [selectedCounty, setSelectedCounty] = useState(user.county_id || '');
-
-  const resetFormValues = useCallback(() => {
-    setValue('email', user.email);
-    setValue('phone_number', user.phone_number);
-    setValue('country_id', user.country_id);
-    setValue('county_id', user.county_id);
-    setValue('sub_county_id', user.sub_county_id);
-    setSelectedCountry(user.country_id || '');
-    setSelectedCounty(user.county_id || '');
-  }, [user, setValue]);
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatar_url);
+  const [nationalIdPreview, setNationalIdPreview] = useState<string | undefined>(user.national_id_url);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [nationalIdFile, setNationalIdFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
-    resetFormValues();
-  }, [user, resetFormValues]); // locationData is implicitly handled if user object changes due to locationData related fetches
+    if (locationData) {
+      setSelectedCountry(user.country_id || '');
+      setSelectedCounty(user.county_id || '');
+    }
+  }, [locationData, user]);
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleNationalIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNationalIdFile(file);
+      setNationalIdPreview(URL.createObjectURL(file));
+    }
+  };
 
   const onSubmit: SubmitHandler<User> = async (data) => {
     setLoading(true);
+    setUploadError(null);
     try {
-      await updateUserProfile(user.id, {
+      let avatar_url = user.avatar_url;
+      let national_id_url = user.national_id_url;
+
+      // Upload avatar if a new file is selected
+      if (avatarFile) {
+        avatar_url = await uploadImage(avatarFile);
+      }
+
+      // Upload national ID if a new file is selected
+      if (nationalIdFile) {
+        national_id_url = await uploadImage(nationalIdFile);
+      }
+
+      const updatedData: Partial<User> = {
         email: data.email,
         phone_number: data.phone_number,
         country_id: data.country_id,
         county_id: data.county_id,
         sub_county_id: data.sub_county_id,
-      });
+        avatar_url,
+        national_id_url,
+      };
+
+      await updateUserProfile(user.id, updatedData);
+
       // Update user in auth store
       setUser({
         ...user,
-        email: data.email,
-        phone_number: data.phone_number,
-        country_id: data.country_id,
-        county_id: data.county_id,
-        sub_county_id: data.sub_county_id,
+        ...updatedData,
         country_name: locationData?.countries.find(c => c.id === data.country_id)?.name,
         county_name: locationData?.counties.find(c => c.id === data.county_id)?.name,
         sub_county_name: locationData?.subcounties.find(s => s.id === data.sub_county_id)?.name,
       });
+
       alert('Profile updated successfully!');
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to update profile.');
+      setUploadError('Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -318,7 +347,8 @@ function SettingsTab({ user, locationData, setUser }: SettingsTabProps) {
   return (
     <div>
       <h3 className="text-xl font-semibold text-gray-800 mb-4">Settings</h3>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      {uploadError && <p className="text-red-500 text-sm mb-4">{uploadError}</p>}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">First Name (Read-only)</label>
           <input
@@ -372,6 +402,30 @@ function SettingsTab({ user, locationData, setUser }: SettingsTabProps) {
             readOnly
             className="w-full p-2 border border-gray-300 rounded bg-gray-100"
           />
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-1">Profile Photo</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="w-full p-2 border border-gray-300 rounded"
+          />
+          {avatarPreview && (
+            <img src={avatarPreview} alt="Profile Preview" className="mt-2 w-32 h-32 object-cover rounded-full" />
+          )}
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-1">National ID Card</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleNationalIdChange}
+            className="w-full p-2 border border-gray-300 rounded"
+          />
+          {nationalIdPreview && (
+            <img src={nationalIdPreview} alt="National ID Preview" className="mt-2 w-32 h-32 object-cover rounded" />
+          )}
         </div>
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Country</label>

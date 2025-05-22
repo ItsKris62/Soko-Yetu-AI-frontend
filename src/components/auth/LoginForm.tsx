@@ -36,6 +36,7 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
     animation: unknown;
     title: string;
     message: string;
+    isSuccess: boolean; // Made non-optional for stricter type checking
   } | null>(null);
   
   const router = useRouter();
@@ -76,7 +77,8 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
       setStatusData({
         animation: successAnimation,
         title: 'Login Successful',
-        message: 'Redirecting to your dashboard...'
+        message: 'Redirecting to your dashboard...',
+        isSuccess: true,
       });
       setShowStatus(true);
       
@@ -86,6 +88,10 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
         } else {
           router.push('/dashboard');
         }
+        // After navigation is initiated, we can choose to hide the status,
+        // or if the component might not unmount immediately, set a state to render null.
+        // For now, let's assume navigation will unmount it.
+        // If issues persist, we can add a state like `loginProcessCompleted` to render null.
       }, 2000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
@@ -95,7 +101,8 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
       setStatusData({
         animation: errorAnimation,
         title: 'Login Failed',
-        message: errorMessage
+        message: errorMessage,
+        isSuccess: false,
       });
       setShowStatus(true);
     } finally {
@@ -134,7 +141,7 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
           </div>
           <h3 className="text-xl font-bold text-gray-800 mt-4">{statusData.title}</h3>
           <p className="text-gray-600 mt-2">{statusData.message}</p>
-          {statusData.title === 'Login Failed' && (
+          {!statusData.isSuccess && ( // Show "Try Again" only for failures
             <Button
               onClick={handleTryAgain}
               variant="secondary" 

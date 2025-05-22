@@ -10,11 +10,22 @@ import { Product } from '../../types/product';
 export default function ProductSection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProducts = async () => {
-      const { products: fetchedProducts } = await fetchProducts(1, 5, selectedCategory);
-      setProducts(fetchedProducts);
+      setLoading(true);
+      setError(null);
+      try {
+        const { products: fetchedProducts } = await fetchProducts(1, 5, selectedCategory);
+        setProducts(fetchedProducts || []); // Ensure products is always an array
+      } catch (err) {
+        setError('Failed to load products. Please try again later.');
+        setProducts([]); // Reset to empty array on error
+      } finally {
+        setLoading(false);
+      }
     };
     loadProducts();
   }, [selectedCategory]);

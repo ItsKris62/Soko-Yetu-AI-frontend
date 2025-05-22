@@ -3,9 +3,22 @@ import { LoginRequest, LoginResponse, SignupRequest, SignupResponse, InsightsPre
 import { Product } from '@/types/product';
 import { User } from '@/types/user';
 
+// Determine the base URL more robustly
+let effectiveBaseURL = 'http://localhost:5000/api'; // Default
+if (process.env.NEXT_PUBLIC_API_URL) {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl.endsWith('/api')) {
+    effectiveBaseURL = envUrl;
+  } else if (envUrl.endsWith('/')) {
+    effectiveBaseURL = `${envUrl}api`;
+  } else {
+    effectiveBaseURL = `${envUrl}/api`;
+  }
+}
+
 // Configure axios instance with a general baseURL
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  baseURL: effectiveBaseURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -164,22 +177,22 @@ const dummyMessages = [
 // Authentication API calls
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
   try {
-    const response = await api.post<LoginResponse>('/auth/login', data);
+    const response = await api.post<LoginResponse>('/auth/login', data); // Should hit /api/auth/login
     return response.data;
-  } catch {
-    if (data.email === 'test@example.com' && data.password === 'password123') {
-      return dummyUser;
-    }
-    throw new Error('Invalid credentials');
+  } catch (error: any) {
+    console.error('Login API error:', error.response?.data || error.message);
+    // Re-throw error with backend message if available, otherwise a generic one
+    throw new Error(error.response?.data?.error || error.message || 'Invalid credentials');
   }
 };
 
-export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
+export const signup = async (data: SignupRequest): Promise<LoginResponse> => { // Changed return type to LoginResponse
   try {
-    const response = await api.post<SignupResponse>('/auth/register', data);
+    const response = await api.post<LoginResponse>('/auth/register', data); // Should hit /api/auth/register
     return response.data;
-  } catch {
-    return { message: 'User created successfully' };
+  } catch (error: any) {
+    console.error('Signup API error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || error.message || 'Registration failed');
   }
 };
 
@@ -217,27 +230,23 @@ export const fetchCategories = async (): Promise<string[]> => {
   }
 };
 
-export const fetchCounties = async (): Promise<{ id: number; name: string }[]> => {
+export const fetchCounties = async () => {
   try {
-    const response = await api.get<{ id: number; name: string }[]>('/counties');
-    return response.data;
-  } catch {
-    return [
-      { id: 1, name: 'Nakuru County' },
-      { id: 2, name: 'Kiambu County' },
-      { id: 3, name: 'Murang’a County' },
-      { id: 4, name: 'Machakos County' },
-      { id: 5, name: 'Nyandarua County' },
-      { id: 6, name: 'Nairobi County' },
-    ];
+    const response = await fetch('http://localhost:5000/api/locations/countries');
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching counties:', error);
   }
 };
 
-export const addProduct = async (data: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<void> => {
+// Renamed addProduct to createProduct and updated return type
+export const createProduct = async (data: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> => {
   try {
-    await api.post('/products', data);
-  } catch {
-    console.log('Product added:', data);
+    const response = await api.post<Product>('/products', data); // Assuming backend returns the created product
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || error.message || 'Failed to add product');
   }
 };
 
@@ -294,6 +303,22 @@ export const fetchDashboardData = async (userId: number, role: 'farmer' | 'buyer
   }
 };
 
+// Upload image to backend (which will handle Cloudinary upload)
+export const uploadImage = async (file: File): Promise<string> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<{ secure_url: string }>('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.secure_url;
+  } catch {
+    throw new Error('Failed to upload image');
+  }
+};
+
 // Location API call
 export const fetchLocationData = async (): Promise<LocationData> => {
   try {
@@ -317,11 +342,13 @@ export const fetchLocationData = async (): Promise<LocationData> => {
 };
 
 // User profile API call
-export const updateUserProfile = async (userId: number, data: Partial<User>): Promise<void> => {
+export const updateUserProfile = async (userId: number, data: Partial<User>): Promise<User> => { // Assuming backend returns updated user
   try {
-    await api.put(`/users/${userId}`, data);
-  } catch {
-    console.log('User updated:', data);
+    const response = await api.put<User>(`/users/${userId}`, data); // Assuming backend returns the updated user
+    return response.data;
+  } catch (error: any) {
+    console.error('Update profile API error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || error.message || 'Failed to update profile');
   }
 };
 
@@ -355,6 +382,14 @@ export const fetchMarketplaceData = async (
         (p) => p.ai_quality_grade && parseFloat(p.ai_quality_grade) >= filters.qualityRating!
       );
     }
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filteredProducts = filteredProducts.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchLower) ||
+          (p.description && p.description.toLowerCase().includes(searchLower))
+      );
+    }
     const start = (page - 1) * limit;
     const end = start + limit;
     return {
@@ -364,7 +399,7 @@ export const fetchMarketplaceData = async (
       counties: [
         { id: 1, name: 'Nakuru County' },
         { id: 2, name: 'Kiambu County' },
-        { id: 3, name: 'Murang’a County' },
+        { id: 3, name: 'Muranga County' },
         { id: 4, name: 'Machakos County' },
         { id: 5, name: 'Nyandarua County' },
         { id: 6, name: 'Nairobi County' },

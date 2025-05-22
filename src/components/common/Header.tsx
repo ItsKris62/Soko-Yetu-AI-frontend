@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Import useRouter
 import Modal from './Modal';
 import LoginForm from '@/app/auth/login/page'; // Import the login form
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,6 +31,7 @@ const Header = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
   const [notifications, setNotifications] = useState<{ id: number; message: string; read: boolean; created_at: string }[]>([]);
+  const router = useRouter(); // Initialize useRouter
   const [messages, setMessages] = useState<{ id: number; sender_id: number; sender_name: string; content: string; read: boolean; created_at: string }[]>([]);
 
   useEffect(() => {
@@ -65,6 +67,7 @@ const Header = () => {
     setIsAuthenticated(false);
     setNotifications([]);
     setMessages([]);
+    router.push('/'); // Redirect to homepage
   };
 
   const handleNotificationClick = async (notificationId: number) => {
@@ -213,7 +216,7 @@ const Header = () => {
             {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="bg-primary text-white px-4 py-1.5 rounded-full hover:bg-secondary transition-all text-sm font-medium"
+              className="bg-red-600 text-white px-4 py-1.5 rounded-full hover:bg-red-700 transition-all text-sm font-medium"
             >
               Logout
             </button>

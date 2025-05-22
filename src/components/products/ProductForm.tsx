@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm, SubmitHandler, FieldValues } from 'react-hook-form';
 import { Product } from '../../types/product';
-import { fetchCategories, fetchCounties, addProduct } from '../../utils/api';
+import { fetchCategories, fetchCounties, createProduct, uploadImage } from '../../utils/api';
 import Button from '../common/Button';
 
 type ProductFormProps = {
@@ -17,6 +17,7 @@ type FormData = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
 export default function ProductForm({ onSubmit, onClose, initialData }: ProductFormProps) {
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({ defaultValues: initialData });
   const [imagePreview, setImagePreview] = useState<string | undefined>(initialData?.image_url);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [counties, setCounties] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ export default function ProductForm({ onSubmit, onClose, initialData }: ProductF
         const fetchedCounties = await fetchCounties();
         setCategories(fetchedCategories);
         setCounties(fetchedCounties);
-      } catch (err) {
+      } catch {
         setError('Failed to load categories or counties.');
       }
     };
@@ -39,27 +40,32 @@ export default function ProductForm({ onSubmit, onClose, initialData }: ProductF
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Simulate Cloudinary upload (replace with actual Cloudinary upload logic)
-      const url = URL.createObjectURL(file); // Temporary preview
-      setImagePreview(url);
-      setValue('image_url', url); // Set the URL in the form (replace with actual Cloudinary URL)
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  const onFormSubmit: SubmitHandler<FormData> = async (data) => {
+  const onFormSubmit: SubmitHandler<FieldValues> = async (data) => {
     setLoading(true);
     setError(null);
     try {
+      let image_url = initialData?.image_url;
+      if (imageFile) {
+        image_url = await uploadImage(imageFile);
+      }
+
       const productData: Omit<Product, 'id' | 'created_at' | 'updated_at'> = {
         ...data,
         farmer_id: initialData?.farmer_id || 1, // Replace with actual farmer_id from auth store
-        category_id: parseInt(data.category_id as any), // Convert string to number
-        county_id: parseInt(data.county_id as any), // Convert string to number
+        category_id: parseInt(data.category_id as any),
+        county_id: parseInt(data.county_id as any),
         country_id: 1, // Assuming Kenya for now (fetch from user data)
         ai_suggested_price: data.ai_suggested_price || 0,
         ai_quality_grade: data.ai_quality_grade || '0',
-      };
-      await addProduct(productData);
+        image_url,
+      } as Omit<Product, 'id' | 'created_at' | 'updated_at'>;
+
+      await createProduct(productData);
       onSubmit(productData);
       onClose();
     } catch (err) {
@@ -169,4 +175,4 @@ export default function ProductForm({ onSubmit, onClose, initialData }: ProductF
       </form>
     </div>
   );
-} 
+}
