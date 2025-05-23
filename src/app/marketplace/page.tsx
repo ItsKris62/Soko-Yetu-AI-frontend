@@ -1,27 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import ProductCard from '../../components/marketplace/ProductCard';
 import ProductFilter from '../../components/marketplace/ProductFilter';
 import { fetchMarketplaceData } from '../../utils/api';
-import { Product } from '../../types/product';
-
-interface FilterParams {
-  category?: string;
-  county?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  qualityRating?: number;
-  search?: string;
-}
+import { Product, MarketplaceResponse, FilterParams } from '../../types/api';
 
 export default function MarketplacePage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [total, setTotal] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const [limit] = useState<number>(10);
   const [filters, setFilters] = useState<FilterParams>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,10 +20,10 @@ export default function MarketplacePage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchMarketplaceData(page, limit, filters);
-        setProducts(data.products || []); // Ensure products is always an array
-        setTotal(data.total || 0);
-      } catch {
+        const response: MarketplaceResponse = await fetchMarketplaceData(page, limit, filters);
+        setProducts(response.products || []); // Ensure products is always an array
+        setTotal(response.total || 0);
+      } catch (err) {
         setError('Failed to load marketplace data.');
         setProducts([]); // Set to empty array on error
       } finally {
@@ -40,12 +31,23 @@ export default function MarketplacePage() {
       }
     };
     loadMarketplaceData();
-  }, [page, filters, limit]);
+  }, [page, filters]);
 
-  const handleFilterChange = (newFilters: Partial<FilterParams>) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
-    setPage(1); // Reset to first page when filters change
+  const handleFilterChange = (newFilters: FilterParams) => {
+    setFilters(newFilters);
+    setPage(1); // Reset to first page on filter change
   };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  // Memoize the product list to prevent unnecessary re-renders
+  const productList = useMemo(() => {
+    return products.map((product) => (
+      <ProductCard key={product.id} product={product} />
+    ));
+  }, [products]);
 
   if (loading) {
     return <div className="py-12 px-6 text-center text-gray-600">Loading...</div>;
@@ -56,11 +58,11 @@ export default function MarketplacePage() {
   }
 
   return (
-    <section className="py-12 px-6 bg-gray-50 min-h-screen">
+    <div className="py-12 px-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 slide-up">Marketplace</h1>
-        <p className="text-lg text-gray-600 mb-8 slide-up">
-          Explore a wide range of agricultural products from verified farmers
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Marketplace</h1>
+        <p className="text-lg text-gray-600 mb-8">
+          Explore a wide range of agricultural products from verified farmers.
         </p>
         <ProductFilter onFilterChange={handleFilterChange} />
         {products.length === 0 ? (
@@ -72,26 +74,26 @@ export default function MarketplacePage() {
             ))}
           </div>
         )}
-        <div className="mt-8 flex justify-center gap-4">
+        <div className="mt-8 flex justify-center gap-2">
           <button
-            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            onClick={() => handlePageChange(page - 1)}
             disabled={page === 1}
-            className="px-4 py-2 bg-[#278783] text-white rounded-lg hover:bg-[#1f6b67] disabled:bg-gray-300 transition-colors"
+            className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
           >
             Previous
           </button>
-          <span className="py-2 text-gray-600">
+          <span className="px-4 py-2">
             Page {page} of {Math.ceil(total / limit)}
           </span>
           <button
-            onClick={() => setPage((prev) => prev + 1)}
-            disabled={page >= Math.ceil(total / limit)}
-            className="px-4 py-2 bg-[#278783] text-white rounded-lg hover:bg-[#1f6b67] disabled:bg-gray-300 transition-colors"
+            onClick={() => handlePageChange(page + 1)}
+            disabled={page === Math.ceil(total / limit)}
+            className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
           >
             Next
           </button>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

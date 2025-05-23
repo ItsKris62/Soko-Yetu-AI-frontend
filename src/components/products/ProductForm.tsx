@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler, FieldValues } from 'react-hook-form';
 import { Product } from '../../types/product';
-import { fetchCategories, fetchCounties, createProduct, uploadImage } from '../../utils/api';
+import { fetchCategories, fetchPredefinedProducts, fetchCounties, createProduct, uploadImage } from '../../utils/api';
 import Button from '../common/Button';
+import { useAuthStore } from '../../stores/authStore';
 
 type ProductFormProps = {
   onSubmit: (data: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
@@ -15,33 +16,56 @@ type ProductFormProps = {
 type FormData = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
 
 export default function ProductForm({ onSubmit, onClose, initialData }: ProductFormProps) {
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({ defaultValues: initialData });
+  const { user } = useAuthStore();
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormData>({ defaultValues: initialData });
   const [imagePreview, setImagePreview] = useState<string | undefined>(initialData?.image_url);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<{ id: number | string; name: string }[]>([]);
+  const [predefinedProducts, setPredefinedProducts] = useState<{ id: number | string; name: string; category_id: number | string; category_name: string }[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<{ id: number | string; name: string; category_id: number | string; category_name: string }[]>([]);
   const [counties, setCounties] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const selectedCategoryId = watch('category_id');
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        const fetchedCategories = await fetchCategories();
-        const fetchedCounties = await fetchCounties();
+        const [fetchedCategories, fetchedProducts, fetchedCounties] = await Promise.all([
+          fetchCategories(),
+          fetchPredefinedProducts(),
+          fetchCounties(),
+        ]);
         setCategories(fetchedCategories);
+        setPredefinedProducts(fetchedProducts);
         setCounties(fetchedCounties);
-      } catch {
-        setError('Failed to load categories or counties.');
+      } catch (err) {
+        setError('Failed to load categories, products, or counties.');
       }
     };
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (selectedCategoryId) {
+      const filtered = predefinedProducts.filter(p => p.category_id.toString() === selectedCategoryId.toString());
+      setFilteredProducts(filtered);
+      setValue('predefined_product_id', undefined); // Reset product selection when category changes
+    } else {
+      setFilteredProducts([]);
+    }
+  }, [selectedCategoryId, predefinedProducts, setValue]);
+
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      try {
+        const url = await uploadImage(file);
+        setImagePreview(url);
+        setValue('image_url', url);
+      } catch (err) {
+        setError('Failed to upload image.');
+      }
     }
   };
 
@@ -49,22 +73,16 @@ export default function ProductForm({ onSubmit, onClose, initialData }: ProductF
     setLoading(true);
     setError(null);
     try {
-      let image_url = initialData?.image_url;
-      if (imageFile) {
-        image_url = await uploadImage(imageFile);
-      }
-
       const productData: Omit<Product, 'id' | 'created_at' | 'updated_at'> = {
         ...data,
-        farmer_id: initialData?.farmer_id || 1, // Replace with actual farmer_id from auth store
+        farmer_id: user?.id || initialData?.farmer_id || 1,
+        predefined_product_id: parseInt(data.predefined_product_id as any),
         category_id: parseInt(data.category_id as any),
         county_id: parseInt(data.county_id as any),
-        country_id: 1, // Assuming Kenya for now (fetch from user data)
+        country_id: 1, // Assuming Kenya
         ai_suggested_price: data.ai_suggested_price || 0,
-        ai_quality_grade: data.ai_quality_grade || '0',
-        image_url,
+        ai_quality_grade: data.ai_quality_grade || 0,
       } as Omit<Product, 'id' | 'created_at' | 'updated_at'>;
-
       await createProduct(productData);
       onSubmit(productData);
       onClose();
@@ -84,14 +102,33 @@ export default function ProductForm({ onSubmit, onClose, initialData }: ProductF
       <h2 className="text-2xl font-bold mb-6 text-center">{initialData ? 'Edit Product' : 'Add Product'}</h2>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <div className="mb-4">
-          <label htmlFor="name" className="block text-gray-700 mb-1">Product Name</label>
-          <input
-            id="name"
-            type="text"
-            {...register('name', { required: 'Product name is required' })}
-            className="w-full p-2 border border-gray-300 rounded input-focus"
-          />
-          {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
+          <label htmlFor="category_id" className="block text-gray-700 mb-1">Category</label>
+          <select
+            id="category_id"
+            {...register('category_id', { required: 'Category is required' })}
+            className="w-full p-2 border border-gray-300 rounded"
+          >
+            <option value="">Select Category</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </select>
+          {errors.category_id && <p className="text-red-500 text-sm mt-1">{errors.category_id.message}</p>}
+        </div>
+        <div className="mb-4">
+          <label htmlFor="predefined_product_id" className="block text-gray-700 mb-1">Product</label>
+          <select
+            id="predefined_product_id"
+            {...register('predefined_product_id', { required: 'Product is required' })}
+            className="w-full p-2 border border-gray-300 rounded"
+            disabled={!selectedCategoryId}
+          >
+            <option value="">Select Product</option>
+            {filteredProducts.map((product) => (
+              <option key={product.id} value={product.id}>{product.name}</option>
+            ))}
+          </select>
+          {errors.predefined_product_id && <p className="text-red-500 text-sm mt-1">{errors.predefined_product_id.message}</p>}
         </div>
         <div className="mb-4">
           <label htmlFor="description" className="block text-gray-700 mb-1">Description</label>
@@ -128,20 +165,6 @@ export default function ProductForm({ onSubmit, onClose, initialData }: ProductF
             {...register('image_url', { required: 'Image is required' })}
           />
           {errors.image_url && <p className="text-red-500 text-sm mt-1">{errors.image_url.message}</p>}
-        </div>
-        <div className="mb-4">
-          <label htmlFor="category_id" className="block text-gray-700 mb-1">Category</label>
-          <select
-            id="category_id"
-            {...register('category_id', { required: 'Category is required' })}
-            className="w-full p-2 border border-gray-300 rounded"
-          >
-            <option value="">Select Category</option>
-            {categories.map((category, index) => (
-              <option key={category} value={index + 1}>{category}</option>
-            ))}
-          </select>
-          {errors.category_id && <p className="text-red-500 text-sm mt-1">{errors.category_id.message}</p>}
         </div>
         <div className="mb-4">
           <label htmlFor="county_id" className="block text-gray-700 mb-1">County</label>

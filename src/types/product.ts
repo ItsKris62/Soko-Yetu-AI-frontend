@@ -4,7 +4,8 @@
 export interface Product {
     id: number;
     farmer_id: number;
-    name: string;
+    predefined_product_id: string;
+    product_name: string;  
     description?: string;
     price: number;
     image_url?: string;

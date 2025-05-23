@@ -1,190 +1,172 @@
-// handles category filtering
 'use client';
 
 import { useState, useEffect } from 'react';
 import { fetchCategories, fetchCounties } from '../../utils/api';
-
-interface FilterParams {
-  category?: string;
-  county?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  qualityRating?: number;
-  search?: string;
-}
+import { FilterParams } from '../../types/api';
+import { useDebounce } from '../../hooks/useDebounce';
 
 interface ProductFilterProps {
-  onFilterChange: (filters: Partial<FilterParams>) => void;
+  onFilterChange: (filters: FilterParams) => void;
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface County {
+  id: number;
+  name: string;
 }
 
 export default function ProductFilter({ onFilterChange }: ProductFilterProps) {
-  const [categories, setCategories] = useState<string[]>([]);
-  const [counties, setCounties] = useState<{ id: number; name: string }[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
-  const [selectedCounty, setSelectedCounty] = useState<string | undefined>(undefined);
-  const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
-  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
-  const [qualityRating, setQualityRating] = useState<number | undefined>(undefined);
-  const [search, setSearch] = useState<string>('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [counties, setCounties] = useState<County[]>([]);
+  const [filters, setFilters] = useState<FilterParams>({});
+  const [searchInput, setSearchInput] = useState<string>(''); // Local state for search input
+  const debouncedSearchQuery = useDebounce(searchInput, 500); // Debounce the search input
 
   useEffect(() => {
     const loadData = async () => {
-      const fetchedCategories = await fetchCategories();
-      const fetchedCounties = await fetchCounties();
-      setCategories(fetchedCategories);
-      setCounties(fetchedCounties);
+      try {
+        const fetchedCategories = await fetchCategories();
+        const fetchedCounties = await fetchCounties();
+        setCategories(fetchedCategories);
+        setCounties(fetchedCounties);
+      } catch (err) {
+        console.error('Failed to load filter data:', err);
+      }
     };
     loadData();
   }, []);
 
-  const handleFilterChange = () => {
-    onFilterChange({
-      category: selectedCategory,
-      county: selectedCounty,
-      minPrice,
-      maxPrice,
-      qualityRating,
-      search: search || undefined,
-    });
-  };
+  useEffect(() => {
+    // Update filters with debounced search query
+    handleFilterChange('searchQuery', debouncedSearchQuery);
+  }, [debouncedSearchQuery]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleFilterChange();
+  const handleFilterChange = (key: keyof FilterParams, value: string | number | undefined) => {
+    const newFilters = { ...filters, [key]: value };
+    if (!value || value === '') {
+      delete newFilters[key];
+    }
+    setFilters(newFilters);
+    onFilterChange(newFilters);
   };
 
   return (
-    <div className="mb-6 space-y-4">
-      {/* Search Bar */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Search Products</h3>
-        <form onSubmit={handleSearchSubmit} className="flex gap-2">
+    <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">Filter Products</h3>
+      <div className="space-y-4">
+        {/* Search Bar */}
+        <div>
+          <label htmlFor="searchQuery" className="block text-sm font-medium text-gray-700 mb-1">
+            Search Products
+          </label>
           <input
+            id="searchQuery"
             type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or description..."
-            className="w-full p-2 border border-gray-300 rounded input-focus"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#278783] transition-colors"
           />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-[#278783] text-white rounded-lg hover:bg-[#1f6b67] transition-colors"
-          >
-            Search
-          </button>
-        </form>
-      </div>
+        </div>
 
-      {/* Category Filter */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Categories</h3>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => {
-              setSelectedCategory(undefined);
-              handleFilterChange();
-            }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              !selectedCategory ? 'bg-[#278783] text-white' : 'bg-gray-200 text-gray-800'
-            }`}
-          >
-            All
-          </button>
-          {categories.map((category) => (
+        {/* Categories */}
+        <div>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Categories</h4>
+          <div className="flex flex-wrap gap-2">
             <button
-              key={category}
-              onClick={() => {
-                setSelectedCategory(category);
-                handleFilterChange();
-              }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                selectedCategory === category ? 'bg-[#278783] text-white' : 'bg-gray-200 text-gray-800'
+              onClick={() => handleFilterChange('category', undefined)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                !filters.category
+                  ? 'bg-[#278783] text-white'
+                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
               }`}
             >
-              {category}
+              All
             </button>
-          ))}
+            {categories.map((category) => (
+              <button
+                key={category.id} // Use category.id as the key
+                onClick={() => handleFilterChange('category', category.name)} // Use category.name for filtering
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                  filters.category === category.name
+                    ? 'bg-[#278783] text-white'
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* County Filter */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Counties</h3>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => {
-              setSelectedCounty(undefined);
-              handleFilterChange();
-            }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              !selectedCounty ? 'bg-[#278783] text-white' : 'bg-gray-200 text-gray-800'
-            }`}
+        {/* Counties */}
+        <div>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Counties</h4>
+          <select
+            value={filters.county || ''}
+            onChange={(e) => handleFilterChange('county', e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#278783] transition-colors"
           >
-            All
-          </button>
-          {counties.map((county) => (
-            <button
-              key={county.id}
-              onClick={() => {
-                setSelectedCounty(county.name);
-                handleFilterChange();
-              }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                selectedCounty === county.name ? 'bg-[#278783] text-white' : 'bg-gray-200 text-gray-800'
-              }`}
-            >
-              {county.name}
-            </button>
-          ))}
+            <option value="">All Counties</option>
+            {counties.map((county) => (
+              <option key={county.id} value={county.name}>
+                {county.name}
+              </option>
+            ))}
+          </select>
         </div>
-      </div>
 
-      {/* Price Range Filter */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Price Range (KSH)</h3>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            value={minPrice || ''}
-            onChange={(e) => {
-              const value = e.target.value ? parseFloat(e.target.value) : undefined;
-              setMinPrice(value);
-              handleFilterChange();
-            }}
-            placeholder="Min Price"
-            className="w-full p-2 border border-gray-300 rounded input-focus"
-          />
-          <input
-            type="number"
-            value={maxPrice || ''}
-            onChange={(e) => {
-              const value = e.target.value ? parseFloat(e.target.value) : undefined;
-              setMaxPrice(value);
-              handleFilterChange();
-            }}
-            placeholder="Max Price"
-            className="w-full p-2 border border-gray-300 rounded input-focus"
-          />
+        {/* Price Range */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="minPrice" className="block text-sm font-medium text-gray-700 mb-1">
+              Min Price (KSH)
+            </label>
+            <input
+              id="minPrice"
+              type="number"
+              placeholder="Min Price"
+              value={filters.minPrice || ''}
+              onChange={(e) => handleFilterChange('minPrice', e.target.value ? parseFloat(e.target.value) : undefined)}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#278783] transition-colors"
+            />
+          </div>
+          <div>
+            <label htmlFor="maxPrice" className="block text-sm font-medium text-gray-700 mb-1">
+              Max Price (KSH)
+            </label>
+            <input
+              id="maxPrice"
+              type="number"
+              placeholder="Max Price"
+              value={filters.maxPrice || ''}
+              onChange={(e) => handleFilterChange('maxPrice', e.target.value ? parseFloat(e.target.value) : undefined)}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#278783] transition-colors"
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Quality Rating Filter */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Quality Rating (1-5)</h3>
-        <input
-          type="number"
-          min="1"
-          max="5"
-          step="0.1"
-          value={qualityRating || ''}
-          onChange={(e) => {
-            const value = e.target.value ? parseFloat(e.target.value) : undefined;
-            setQualityRating(value);
-            handleFilterChange();
-          }}
-          placeholder="Min Rating"
-          className="w-full p-2 border border-gray-300 rounded input-focus"
-        />
+        {/* Quality Rating */}
+        <div>
+          <label htmlFor="qualityRating" className="block text-sm font-medium text-gray-700 mb-1">
+            Min Quality Rating
+          </label>
+          <select
+            id="qualityRating"
+            value={filters.qualityRating || ''}
+            onChange={(e) => handleFilterChange('qualityRating', e.target.value ? parseFloat(e.target.value) : undefined)}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#278783] transition-colors"
+          >
+            <option value="">Any Rating</option>
+            <option value="4.0">4.0+</option>
+            <option value="4.5">4.5+</option>
+            <option value="4.8">4.8+</option>
+          </select>
+        </div>
       </div>
     </div>
   );

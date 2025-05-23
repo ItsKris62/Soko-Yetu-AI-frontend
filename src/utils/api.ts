@@ -24,7 +24,22 @@ const api = axios.create({
   },
 });
 
-// Dummy data for testing
+interface Category {
+  id: number | string;
+  name: string;
+}
+interface County {
+  id: number;
+  name: string;
+}
+interface PredefinedProduct {
+  id: number | string;
+  name: string;
+  category_id: number | string;
+  category_name: string;
+}
+
+// Define dummyUser
 const dummyUser: LoginResponse = {
   token: 'fake-jwt-token',
   user: {
@@ -41,10 +56,11 @@ const dummyProducts: Product[] = [
   {
     id: 1,
     farmer_id: 1,
-    name: 'Premium Maize',
+    predefined_product_id: 1,
+    product_name: 'Maize',
     price: 4200,
     image_url: 'https://res.cloudinary.com/veriwoks-sokoyetu/image/upload/v1747660158/sweet-corn.png',
-    category_id: 1,
+    category_id: 1074583482281361409,
     category_name: 'Cereals',
     county_id: 1,
     county_name: 'Nakuru County',
@@ -54,10 +70,11 @@ const dummyProducts: Product[] = [
   {
     id: 2,
     farmer_id: 1,
-    name: 'Organic Tomatoes',
+    predefined_product_id: 2,
+    product_name: 'Tomatoes',
     price: 150,
     image_url: 'https://res.cloudinary.com/veriwoks-sokoyetu/image/upload/v1747634226/red-tomatoes.png',
-    category_id: 2,
+    category_id: 1067026787098886145,
     category_name: 'Vegetables',
     county_id: 2,
     county_name: 'Kiambu County',
@@ -67,10 +84,11 @@ const dummyProducts: Product[] = [
   {
     id: 3,
     farmer_id: 1,
-    name: 'Fresh Avocados',
+    predefined_product_id: 3,
+    product_name: 'Avocados',
     price: 320,
     image_url: 'https://res.cloudinary.com/veriwoks-sokoyetu/image/upload/v1747634473/avocado.png',
-    category_id: 3,
+    category_id: 1067026787099017217,
     category_name: 'Fruits',
     county_id: 3,
     county_name: 'Murang’a County',
@@ -80,7 +98,8 @@ const dummyProducts: Product[] = [
   {
     id: 4,
     farmer_id: 1,
-    name: 'Red Beans',
+    predefined_product_id: 2,
+    product_name: 'Red Beans',
     price: 500,
     image_url: 'https://res.cloudinary.com/veriwoks-sokoyetu/image/upload/v1747637030/red-beans.png',
     category_id: 4,
@@ -93,7 +112,7 @@ const dummyProducts: Product[] = [
   {
     id: 5,
     farmer_id: 1,
-    name: 'Irish Potatoes',
+    product_name: 'Irish Potatoes',
     price: 2800,
     image_url: 'https://res.cloudinary.com/veriwoks-sokoyetu/image/upload/v1747634222/potatoes.png',
     category_id: 5,
@@ -117,6 +136,51 @@ const dummyProducts: Product[] = [
     ai_quality_grade: '4.3',
   },
 ];
+
+const dummyCategories: Category[] = [
+  { id: 1067026787098886145, name: 'Vegetables' },
+  { id: 1067026787099017217, name: 'Fruits' },
+  { id: 1067026787099049985, name: 'Grains' },
+  { id: 1074583482281361409, name: 'Cereals' },
+  { id: 1074583482281459713, name: 'Legumes' },
+  { id: 1074583482281492481, name: 'Tubers' },
+  { id: 1074583482281525249, name: 'Dairy' },
+  { id: 1074583482281558017, name: 'Herbs and Spices' },
+  { id: 1074583482281590785, name: 'Nuts' },
+];
+
+const dummyPredefinedProducts: PredefinedProduct[] = [
+  // Vegetables
+  { id: '1', name: 'Tomatoes', category_id: '1067026787098886145', category_name: 'Vegetables' },
+  { id: '2', name: 'Onions', category_id: '1067026787098886145', category_name: 'Vegetables' },
+  { id: '3', name: 'Kales (Sukuma Wiki)', category_id: '1067026787098886145', category_name: 'Vegetables' },
+  // Fruits
+  { id: '4', name: 'Avocados', category_id: '1067026787099017217', category_name: 'Fruits' },
+  { id: '5', name: 'Mangoes', category_id: '1067026787099017217', category_name: 'Fruits' },
+  { id: '6', name: 'Bananas', category_id: '1067026787099017217', category_name: 'Fruits' },
+  // Grains
+  { id: '7', name: 'Rice', category_id: '1067026787099049985', category_name: 'Grains' },
+  { id: '8', name: 'Sorghum', category_id: '1067026787099049985', category_name: 'Grains' },
+  // Cereals
+  { id: '9', name: 'Maize', category_id: '1074583482281361409', category_name: 'Cereals' },
+  { id: '10', name: 'Wheat', category_id: '1074583482281361409', category_name: 'Cereals' },
+  // Legumes
+  { id: '11', name: 'Beans', category_id: '1074583482281459713', category_name: 'Legumes' },
+  { id: '12', name: 'Peas', category_id: '1074583482281459713', category_name: 'Legumes' },
+  // Tubers
+  { id: '13', name: 'Potatoes (Irish Potatoes)', category_id: '1074583482281492481', category_name: 'Tubers' },
+  { id: '14', name: 'Sweet Potatoes', category_id: '1074583482281492481', category_name: 'Tubers' },
+  // Dairy
+  { id: '15', name: 'Milk', category_id: '1074583482281525249', category_name: 'Dairy' },
+  { id: '16', name: 'Cheese', category_id: '1074583482281525249', category_name: 'Dairy' },
+  // Herbs and Spices
+  { id: '17', name: 'Coriander (Dhania)', category_id: '1074583482281558017', category_name: 'Herbs and Spices' },
+  { id: '18', name: 'Garlic', category_id: '1074583482281558017', category_name: 'Herbs and Spices' },
+  // Nuts
+  { id: '19', name: 'Cashew Nuts', category_id: '1074583482281590785', category_name: 'Nuts' },
+  { id: '20', name: 'Macadamia Nuts', category_id: '1074583482281590785', category_name: 'Nuts' },
+];
+
 
 const dummyInsights: InsightsPreviewData = {
   priceTrends: [
@@ -152,6 +216,17 @@ const dummyReviews: Review[] = [
   { id: 2, product_id: 2, product_name: 'Organic Tomatoes', reviewer_id: 2, reviewer_name: 'Jane Smith', rating: 4, comment: 'Very fresh.', created_at: '2025-04-04T00:00:00Z' },
 ];
 
+
+const dummyNotifications = [
+  { id: 1, message: 'Your order has been shipped!', read: false, created_at: '2025-05-18T12:00:00Z' },
+  { id: 2, message: 'New review on your product!', read: false, created_at: '2025-05-17T09:00:00Z' },
+];
+
+const dummyMessages = [
+  { id: 1, sender_id: 2, sender_name: 'Jane Smith', content: 'Hi, is your maize still available?', read: false, created_at: '2025-05-18T14:00:00Z' },
+  { id: 2, sender_id: 2, sender_name: 'Jane Smith', content: 'Can you deliver to Nairobi?', read: false, created_at: '2025-05-18T14:05:00Z' },
+];
+
 const dummyDashboardData: DashboardData = {
   user: dummyUser.user,
   stats: {
@@ -164,15 +239,6 @@ const dummyDashboardData: DashboardData = {
   products: dummyProducts,
 };
 
-const dummyNotifications = [
-  { id: 1, message: 'Your order has been shipped!', read: false, created_at: '2025-05-18T12:00:00Z' },
-  { id: 2, message: 'New review on your product!', read: false, created_at: '2025-05-17T09:00:00Z' },
-];
-
-const dummyMessages = [
-  { id: 1, sender_id: 2, sender_name: 'Jane Smith', content: 'Hi, is your maize still available?', read: false, created_at: '2025-05-18T14:00:00Z' },
-  { id: 2, sender_id: 2, sender_name: 'Jane Smith', content: 'Can you deliver to Nairobi?', read: false, created_at: '2025-05-18T14:05:00Z' },
-];
 
 // Authentication API calls
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
@@ -199,7 +265,7 @@ export const signup = async (data: SignupRequest): Promise<LoginResponse> => { /
 // Product-related API calls
 export const fetchProducts = async (
   page: number = 1,
-  limit: number = 5,
+  limit: number = 8,
   category?: string
 ): Promise<{ products: Product[]; total: number }> => {
   try {
@@ -221,24 +287,78 @@ export const fetchProducts = async (
   }
 };
 
-export const fetchCategories = async (): Promise<string[]> => {
+// Fetch autocomplete suggestions for product names
+export const fetchCategories = async (): Promise<Category[]> => {
   try {
-    const response = await api.get<string[]>('/categories');
+    const response = await api.get<Category[]>('/categories');
     return response.data;
-  } catch {
-    return ['Cereals', 'Vegetables', 'Fruits', 'Legumes', 'Tubers', 'Dairy'];
+  } catch (error: any) {
+    console.error('Error fetching categories:', error.response?.data || error.message || error);
+    return dummyCategories;
   }
 };
 
-export const fetchCounties = async () => {
+export const fetchPredefinedProducts = async (categoryId?: string): Promise<PredefinedProduct[]> => {
   try {
-    const response = await fetch('http://localhost:5000/api/locations/countries');
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching counties:', error);
+    const response = await api.get<PredefinedProduct[]>('/predefined-products', {
+      params: { categoryId },
+    });
+    return response.data;
+  } catch {
+    return categoryId
+      ? dummyPredefinedProducts.filter(p => p.category_id.toString() === categoryId.toString())
+      : dummyPredefinedProducts;
   }
 };
+
+export const fetchCountries = async (): Promise<{ id: string; name: string }[]> => {
+  try {
+    const response = await api.get<{ id: string; name: string }[]>('/locations/countries');
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching countries:', {
+      message: error.message,
+      response: error.response ? { status: error.response.status, data: error.response.data } : null,
+      config: error.config ? { url: error.config.url, method: error.config.method } : null,
+    });
+    return [{ id: '1', name: 'Kenya' }]; // Fallback
+  }
+};
+
+export const fetchCounties = async (countryId?: string): Promise<{ id: string; name: string; country_id: string }[]> => {
+  try {
+    const response = await api.get<{ id: string; name: string; country_id: string }[]>('/locations/counties', {
+      params: { countryId },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching counties:', {
+      message: error.message,
+      response: error.response ? { status: error.response.status, data: error.response.data } : null,
+      config: error.config ? { url: error.config.url, method: error.config.method } : null,
+    });
+    return []; // No dummy data, return empty array on failure
+  }
+};
+
+export const fetchSubCounties = async (countyId?: string): Promise<{ id: string; name: string; county_id: string }[]> => {
+  try {
+    const response = await api.get<{ id: string; name: string; county_id: string }[]>('/locations/sub-counties', {
+      params: { countyId },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching sub-counties:', {
+      message: error.message,
+      response: error.response ? { status: error.response.status, data: error.response.data } : null,
+      config: error.config ? { url: error.config.url, method: error.config.method } : null,
+    });
+    return []; // No dummy data, return empty array on failure
+  }
+};
+
+
+
 
 // Renamed addProduct to createProduct and updated return type
 export const createProduct = async (data: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> => {
@@ -288,17 +408,11 @@ export const fetchDashboardData = async (userId: number, role: 'farmer' | 'buyer
     return response.data;
   } catch {
     return {
-      ...dummyDashboardData,
-      user: { ...dummyUser.user, role },
-      products: role === 'farmer' ? dummyProducts : dummyTransactions.map((t) => ({
-        id: t.product_id,
-        name: t.product_name,
-        price: t.total_price / t.quantity,
-        quantity: t.quantity,
-      } as Product)),
-      transactions: role === 'farmer'
-        ? dummyTransactions.filter((t) => t.farmer_id === userId)
-        : dummyTransactions.filter((t) => t.buyer_id === userId),
+      user: dummyUser.user,
+      stats: { total_products: 0, completed_transactions: 0, average_rating: 0 },
+      transactions: [],
+      reviews: [],
+      products: [],
     };
   }
 };
@@ -327,16 +441,8 @@ export const fetchLocationData = async (): Promise<LocationData> => {
   } catch {
     return {
       countries: [{ id: 1, name: 'Kenya' }],
-      counties: [
-        { id: 1, name: 'Nakuru County', country_id: 1 },
-        { id: 2, name: 'Kiambu County', country_id: 1 },
-        { id: 3, name: 'Murang’a County', country_id: 1 },
-      ],
-      subcounties: [
-        { id: 1, name: 'Naivasha', county_id: 1 },
-        { id: 2, name: 'Thika', county_id: 2 },
-        { id: 3, name: 'Gatundu', county_id: 2 },
-      ],
+      counties: [],
+      subcounties: [],
     };
   }
 };
@@ -365,6 +471,7 @@ export const fetchMarketplaceData = async (
     return response.data;
   } catch {
     let filteredProducts = dummyProducts;
+    // Apply filters
     if (filters.category) {
       filteredProducts = filteredProducts.filter((p) => p.category_name === filters.category);
     }
@@ -382,12 +489,12 @@ export const fetchMarketplaceData = async (
         (p) => p.ai_quality_grade && parseFloat(p.ai_quality_grade) >= filters.qualityRating!
       );
     }
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
       filteredProducts = filteredProducts.filter(
         (p) =>
-          p.name.toLowerCase().includes(searchLower) ||
-          (p.description && p.description.toLowerCase().includes(searchLower))
+          p.name.toLowerCase().includes(query) ||
+          (p.description && p.description.toLowerCase().includes(query))
       );
     }
     const start = (page - 1) * limit;
@@ -395,11 +502,11 @@ export const fetchMarketplaceData = async (
     return {
       products: filteredProducts.slice(start, end),
       total: filteredProducts.length,
-      categories: ['Cereals', 'Vegetables', 'Fruits', 'Legumes', 'Tubers', 'Dairy'],
+      categories: dummyCategories.map(c => c.name),
       counties: [
         { id: 1, name: 'Nakuru County' },
         { id: 2, name: 'Kiambu County' },
-        { id: 3, name: 'Muranga County' },
+        { id: 3, name: 'Murang’a County' },
         { id: 4, name: 'Machakos County' },
         { id: 5, name: 'Nyandarua County' },
         { id: 6, name: 'Nairobi County' },
@@ -430,7 +537,7 @@ export const fetchNotifications = async (userId: number): Promise<{ id: number; 
     const response = await api.get(`/notifications/${userId}`);
     return response.data;
   } catch {
-    return dummyNotifications;
+    return [];
   }
 };
 
@@ -439,7 +546,7 @@ export const fetchMessages = async (userId: number): Promise<{ id: number; sende
     const response = await api.get(`/messages/${userId}`);
     return response.data;
   } catch {
-    return dummyMessages;
+    return [];
   }
 };
 

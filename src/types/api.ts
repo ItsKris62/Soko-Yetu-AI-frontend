@@ -2,7 +2,33 @@
 
 import { User } from './user';
 
-import { Product } from './product';
+// Updated Product type
+export interface Product {
+  id: string; // Changed to string to handle large integers from unique_rowid()
+  farmer_id: number;
+  predefined_product_id: string; // Changed to string for large integers
+  product_name: string; // Replaces 'name', fetched from predefined_products
+  description?: string | null;
+  price: number;
+  image_url?: string | null;
+  category_id: string; // Changed to string for large integers
+  category_name?: string;
+  county_id?: number;
+  county_name?: string;
+  ai_suggested_price?: number;
+  ai_quality_grade?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// New PredefinedProduct type
+export interface PredefinedProduct {
+  id: string; // Changed to string for large integers
+  name: string;
+  category_id: string; // Changed to string for large integers
+  category_name: string;
+}
+
 
 export interface LoginRequest {
   email: string;
@@ -69,18 +95,23 @@ export interface InsightsPreviewData {
 
 export interface FilterParams {
   category?: string;
-  county?: string;
+  country_id?: string; // Add country_id for filtering
+  county_id?: string;  // Changed to string for large integers
+  sub_county_id?: string; // Add sub_county_id for filtering
   distance?: number;
   minPrice?: number;
   maxPrice?: number;
   qualityRating?: number;
+  searchQuery?: string;
 }
 
 export interface MarketplaceResponse {
   products: Product[];
   total: number;
   categories: string[];
-  counties: { id: number; name: string }[];
+   countries: { id: string; name: string }[]; // Updated to fetch from DB
+  counties: { id: string; name: string; country_id: string }[]; // Updated to fetch from DB
+  sub_counties: { id: string; name: string; county_id: string }[]; // Add sub_counties
 }
 
 export interface UserStats {
