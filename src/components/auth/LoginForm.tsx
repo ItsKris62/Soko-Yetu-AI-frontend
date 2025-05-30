@@ -8,22 +8,17 @@ import { motion } from 'framer-motion';
 import Button from '@/components/common/Button';
 import dynamic from 'next/dynamic';
 import { setToken } from '@/utils/auth'; 
-// import Lottie from 'lottie-react';
 
 import loadingAnimation from '@/../public/animations/loading.json';
-
+import successAnimation from '@/../public/animations/success.json';
+import errorAnimation from '@/../public/animations/error.json';
 
 // Dynamically import Lottie to avoid SSR issues
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
-
-import successAnimation from '@/../public/animations/success.json';
-import errorAnimation from '@/../public/animations/error.json';
-
 interface LoginFormProps {
   onSuccess?: () => void;
   onNavigateToRegister?: () => void;
-
 }
 
 const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
@@ -32,11 +27,12 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false); // New state to track navigation
   const [statusData, setStatusData] = useState<{
     animation: unknown;
     title: string;
     message: string;
-    isSuccess: boolean; // Made non-optional for stricter type checking
+    isSuccess: boolean;
   } | null>(null);
   
   const router = useRouter();
@@ -45,7 +41,7 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(''); // Clear previous errors
+    setError('');
 
     // Client-side validation
     if (!email.trim()) {
@@ -59,7 +55,7 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
       setIsLoading(false);
       return;
     }
-    if (!password) { // Password can't be just spaces, so no trim needed usually
+    if (!password) {
       setError('Password is required.');
       setIsLoading(false);
       return;
@@ -69,7 +65,7 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
 
     try {
       const { user, token } = await login({ email, password });
-      setToken(token);            // ← save JWT
+      setToken(token);
       setUser(user);
       setIsAuthenticated(true);
       
@@ -82,17 +78,17 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
       });
       setShowStatus(true);
       
+      // Set navigation state and handle redirect
       setTimeout(() => {
+        setIsNavigating(true);
+        
         if (onSuccess) {
           onSuccess();
         } else {
           router.push('/dashboard');
         }
-        // After navigation is initiated, we can choose to hide the status,
-        // or if the component might not unmount immediately, set a state to render null.
-        // For now, let's assume navigation will unmount it.
-        // If issues persist, we can add a state like `loginProcessCompleted` to render null.
       }, 2000);
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
       setError(errorMessage);
@@ -114,9 +110,7 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
     setShowStatus(false);
     setStatusData(null);
     setError('');
-    // Optionally clear password, or both email and password
     setPassword(''); 
-    // setEmail(''); // Uncomment to clear email as well
   };
 
   const handleSignUpClick = () => {
@@ -127,21 +121,36 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
     }
   };
 
+  // Don't render anything if we're navigating after successful login
+  if (isNavigating) {
+    return null;
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }} // Add exit animation
       transition={{ duration: 0.3 }}
       className="space-y-6"
     >
       {showStatus && statusData ? (
-        <div className="text-center p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.3 }}
+          className="text-center p-6"
+        >
           <div className="w-32 h-32 mx-auto">
-            <Lottie animationData={statusData.animation} loop={false} />
+            <Lottie 
+              animationData={statusData.animation} 
+              loop={!statusData.isSuccess} // Only loop for loading/error, not success
+            />
           </div>
           <h3 className="text-xl font-bold text-gray-800 mt-4">{statusData.title}</h3>
           <p className="text-gray-600 mt-2">{statusData.message}</p>
-          {!statusData.isSuccess && ( // Show "Try Again" only for failures
+          {!statusData.isSuccess && (
             <Button
               onClick={handleTryAgain}
               variant="secondary" 
@@ -150,9 +159,14 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
               Try Again
             </Button>
           )}
-        </div>
+        </motion.div>
       ) : (
-        <>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -176,6 +190,7 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 placeholder="Enter your email"
                 required
+                disabled={isLoading} // Disable during loading
               />
             </div>
 
@@ -191,6 +206,7 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 placeholder="Enter your password"
                 required
+                disabled={isLoading} // Disable during loading
               />
             </div>
 
@@ -201,6 +217,7 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
                   name="remember-me"
                   type="checkbox"
                   className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  disabled={isLoading} // Disable during loading
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                   Remember me
@@ -208,7 +225,10 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
               </div>
 
               <div className="text-sm">
-                <a href="/auth/reset-password" className="font-medium text-primary hover:text-primary-dark">
+                <a 
+                  href="/auth/reset-password" 
+                  className={`font-medium ${isLoading ? 'text-gray-400 pointer-events-none' : 'text-primary hover:text-primary-dark'}`}
+                >
                   Forgot password?
                 </a>
               </div>
@@ -222,7 +242,7 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
-                  <div className="w-6 h-6 mr-2"> {/* Adjust size as needed */}
+                  <div className="w-6 h-6 mr-2">
                     <Lottie animationData={loadingAnimation} loop={true} />
                   </div>
                   Signing in...
@@ -234,17 +254,17 @@ const LoginForm = ({ onSuccess, onNavigateToRegister }: LoginFormProps) => {
           </form>
 
           <div className="text-center text-sm text-gray-600">
-            Dont have an account?{' '}
+            Don't have an account?{' '}
             <button 
               type="button"
-              // onClick={() => router.push('/auth/register')}
               onClick={handleSignUpClick}
-              className="font-medium text-primary hover:text-primary-dark"
+              className={`font-medium ${isLoading ? 'text-gray-400 pointer-events-none' : 'text-primary hover:text-primary-dark'}`}
+              disabled={isLoading}
             >
               Sign up
             </button>
           </div>
-        </>
+        </motion.div>
       )}
     </motion.div>
   );
