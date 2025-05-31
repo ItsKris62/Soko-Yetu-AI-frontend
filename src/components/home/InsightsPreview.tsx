@@ -17,30 +17,47 @@ import { fetchInsightsPreview } from '@/utils/api';
 import { InsightsPreviewData } from '@/types/api';
 
 // Register Chart.js components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function InsightsPreview() {
   const [insights, setInsights] = useState<InsightsPreviewData | null>(null);
 
   useEffect(() => {
     const loadInsights = async () => {
-      const data = await fetchInsightsPreview();
-      setInsights(data);
+      try {
+        const data = await fetchInsightsPreview();
+        setInsights(data);
+      } catch (error) {
+        console.error('Failed to fetch insights:', error);
+        // Optionally, set a default value or show an error message
+      }
     };
     loadInsights();
   }, []);
 
   if (!insights) {
-    return <div className="py-12 px-6 text-center text-gray-600">Loading insights...</div>;
+    return (
+      <div className="py-12 px-6 text-center text-gray-600">
+        Loading insights...
+      </div>
+    );
   }
 
   // Price Trends Chart Data
   const priceTrendsData = {
-    labels: insights.priceTrends.map((trend) => trend.date),
+    labels: insights.priceTrends?.map((trend) => trend.date) ?? [], // Use optional chaining and fallback to empty array
     datasets: [
       {
         label: 'Price (KSH)',
-        data: insights.priceTrends.map((trend) => trend.price),
+        data: insights.priceTrends?.map((trend) => trend.price) ?? [],
         borderColor: '#278783',
         backgroundColor: 'rgba(39, 135, 131, 0.2)',
         fill: true,
@@ -79,7 +96,7 @@ export default function InsightsPreview() {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Market Demand</h3>
             <ul className="space-y-3">
-              {insights.marketDemands.map((demand, index) => (
+              {insights.marketDemands?.map((demand, index) => (
                 <li key={index} className="flex justify-between items-center">
                   <span className="text-gray-600">{demand.product_name}</span>
                   <div className="w-24 bg-gray-200 rounded-full h-2.5">
@@ -98,7 +115,7 @@ export default function InsightsPreview() {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Quality Assessment</h3>
             <ul className="space-y-3">
-              {insights.qualityMetrics.map((metric, index) => (
+              {insights.qualityMetrics?.map((metric, index) => (
                 <li key={index} className="flex justify-between items-center">
                   <span className="text-gray-600">{metric.product_name}</span>
                   <div className="flex items-center">
@@ -114,7 +131,7 @@ export default function InsightsPreview() {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Regional Supply/Demand</h3>
             <ul className="space-y-3">
-              {insights.regionalData.map((region, index) => (
+              {insights.regionalData?.map((region, index) => (
                 <li key={index} className="text-gray-600">
                   <span className="font-medium">{region.county_name}</span>
                   <div className="flex justify-between mt-1">

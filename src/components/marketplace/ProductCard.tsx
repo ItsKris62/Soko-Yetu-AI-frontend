@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useAuthStore } from '../../stores/authStore';
+import useAuthStore from '../../stores/authStore';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { Product } from '../../types/product';

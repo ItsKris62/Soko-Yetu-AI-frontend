@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'; // Import useRouter
 import Modal from './Modal';
 import LoginForm from '@/app/auth/login/page'; // Import the login form
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuthStore } from '../../stores/authStore';
+import useAuthStore from '../../stores/authStore';
 import { fetchNotifications, fetchMessages, markMessageAsRead, markNotificationAsRead } from '../../utils/api';
 
 // Icons for notifications and messages (using SVG for simplicity)

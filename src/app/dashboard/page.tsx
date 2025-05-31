@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuthStore } from '../../stores/authStore';
+import useAuthStore from '../../stores/authStore';
 import { 
   fetchDashboardData, 
   fetchLocationData, 
@@ -425,6 +425,7 @@ function SettingsTab({ user, locationData, setUser, onUserUpdate }: SettingsTabP
   const [currentUser, setCurrentUser] = useState<User>(user);
   const [loading, setLoading] = useState(false);
   const [fetchingUser, setFetchingUser] = useState(false);
+  const { updateUser, logout } = useAuthStore();
   const [selectedCountry, setSelectedCountry] = useState(user.country_id?.toString() || '');
   const [selectedCounty, setSelectedCounty] = useState(user.county_id?.toString() || '');
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatar_url);

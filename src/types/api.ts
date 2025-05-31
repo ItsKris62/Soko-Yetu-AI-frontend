@@ -1,5 +1,4 @@
 // TypeScript type definitions for API responses
-
 import { User } from './user';
 
 // Updated Product type
@@ -21,6 +20,12 @@ export interface Product {
   updated_at?: string;
 }
 
+// Category type
+export interface Category {
+  id: string;
+  name: string;
+}
+
 // New PredefinedProduct type
 export interface PredefinedProduct {
   id: string; // Changed to string for large integers
@@ -28,7 +33,6 @@ export interface PredefinedProduct {
   category_id: string; // Changed to string for large integers
   category_name: string;
 }
-
 
 export interface LoginRequest {
   email: string;
@@ -52,7 +56,7 @@ export interface SignupResponse {
   message: string;
   user?: User;
 }
-  
+
 export interface FeedbackRequest {
   user_id?: number | null;
   feedback: string;
@@ -96,7 +100,7 @@ export interface InsightsPreviewData {
 export interface FilterParams {
   category?: string;
   country_id?: string; // Add country_id for filtering
-  county_id?: string;  // Changed to string for large integers
+  county_id?: string; // Changed to string for large integers
   sub_county_id?: string; // Add sub_county_id for filtering
   distance?: number;
   minPrice?: number;
@@ -109,9 +113,9 @@ export interface MarketplaceResponse {
   products: Product[];
   total: number;
   categories: string[];
-   countries: { id: string; name: string }[]; // Updated to fetch from DB
-  counties: { id: string; name: string; country_id: string }[]; // Updated to fetch from DB
-  sub_counties: { id: string; name: string; county_id: string }[]; // Add sub_counties
+  countries: { id: string; name: string }[];
+  counties: { id: string; name: string; country_id: string }[];
+  sub_counties: { id: string; name: string; county_id: string }[];
 }
 
 export interface UserStats {
@@ -163,7 +167,7 @@ export interface DashboardData {
 }
 
 export interface LocationData {
-  countries: { id: number; name: string }[];
-  counties: { id: number; name: string; country_id: number }[];
-  subcounties: { id: number; name: string; county_id: number }[];
+  countries: { id: string; name: string }[];
+  counties: { id: string; name: string; country_id: string }[];
+  subcounties: { id: string; name: string; county_id: string }[];
 }

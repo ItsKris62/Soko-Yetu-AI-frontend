@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import dynamic from 'next/dynamic';
-import { useAuthStore } from '../../stores/authStore';
+import useAuthStore from '../../stores/authStore';
 import { getUserFromToken } from '../../utils/auth';
 import { submitFeedback } from '../../utils/api';
 import { showToast } from '../common/Toast';
