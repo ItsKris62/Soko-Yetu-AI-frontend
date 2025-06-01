@@ -17,7 +17,7 @@ const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
 import successAnimation from '@/../public/animations/success.json';
 import errorAnimation from '@/../public/animations/error.json';
-import { useAuthStore } from '@/stores/authStore'; // Import auth store
+import useAuthStore from '@/stores/authStore'; // Import auth store
 import { setToken } from '@/utils/auth'; // Import setToken utility
 
 interface Country {

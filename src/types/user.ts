@@ -18,6 +18,8 @@ export interface User {
     national_id_url?: string;
     created_at?: string;
     updated_at?: string;
+    role: string;
+    date_of_birth?: string | null;
   }
   
   export interface Country {

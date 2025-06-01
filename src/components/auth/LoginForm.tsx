@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '@/utils/api';
-import { useAuthStore } from '@/stores/authStore';
+import useAuthStore from '@/stores/authStore';
 import { motion } from 'framer-motion';
 import Button from '@/components/common/Button';
 import dynamic from 'next/dynamic';

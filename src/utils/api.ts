@@ -1,6 +1,8 @@
+
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import toast from 'react-hot-toast';
-import useAuthStore from '@/stores/authStore';
+import useAuthStore from '@/stores/authStore'; // import zustand store for authentication
+// import types for API requests and responses
 import {
   LoginRequest,
   LoginResponse,
@@ -20,10 +22,16 @@ import {
   PredefinedProduct,
 } from '../types/api';
 
+// Import user-related types (including Country, County, SubCounty)
+import { Country, County, SubCounty } from '../types/user';
+
 // Determine the base URL
 let effectiveBaseURL = 'http://localhost:5000/api';
+
+// Check for environment variable to set base URL
 if (process.env.NEXT_PUBLIC_API_URL) {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  // Ensure the URL ends with '/api'
   if (envUrl.endsWith('/api')) {
     effectiveBaseURL = envUrl;
   } else if (envUrl.endsWith('/')) {
@@ -60,11 +68,13 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
+    // Attempt to refresh token if 401 Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         const { data } = await api.post<LoginResponse>('/auth/refresh');
         useAuthStore.getState().setAuth(data.user, data.token);
+        localStorage.setItem('auth_token', data.token); // Backward compatibility
         originalRequest.headers = {
           ...originalRequest.headers,
           Authorization: `Bearer ${data.token}`,
@@ -78,6 +88,7 @@ api.interceptors.response.use(
       }
     }
 
+    // Extract error message from response
     const errorData = error.response?.data as { error?: string } | undefined;
     const errorMessage =
       errorData?.error ||
@@ -113,7 +124,11 @@ export const authenticatedRequest = async <T>(
   }
 };
 
-// Authentication API calls
+// ------------------------------------
+//      Authentication API calls
+// ------------------------------------
+
+// Login and Signup API calls
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
   const response = await authenticatedRequest<LoginResponse>('post', '/auth/login', data);
   useAuthStore.getState().setAuth(response.user, response.token);
@@ -121,12 +136,20 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
   return response;
 };
 
+// ---------------------------------------
+//      Register a new user
+// ----------------------------------------
+
 export const signup = async (data: SignupRequest): Promise<LoginResponse> => {
   const response = await authenticatedRequest<LoginResponse>('post', '/auth/register', data);
   useAuthStore.getState().setAuth(response.user, response.token);
   localStorage.setItem('auth_token', response.token); // Backward compatibility
   return response;
 };
+
+// ---------------------------------------
+//      User Profile Management API calls
+// ----------------------------------------
 
 // Fetch user profile
 export const fetchUserProfile = async (userId: number): Promise<User> => {
@@ -431,8 +454,14 @@ export const fetchProducts = async (
 export const fetchCategories = async (): Promise<Category[]> => {
   try {
     return await authenticatedRequest<Category[]>('get', '/categories');
-  } catch (error: any) {
-    console.error('Error fetching categories:', error.response?.data || error.message || error);
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      console.error('Error fetching categories:', error.response?.data || error.message);
+    } else if (error instanceof Error) {
+      console.error('Error fetching categories:', error.message);
+    } else {
+      console.error('Error fetching categories:', error);
+    }
     return dummyCategories;
   }
 };
@@ -452,55 +481,56 @@ export const fetchPredefinedProducts = async (categoryId?: string): Promise<Pred
   }
 };
 
-export const fetchCountries = async (): Promise<{ id: string; name: string }[]> => {
+// -----------------------------
+// Location APIs
+// -----------------------------
+
+/**
+ * Fetches list of countries.
+ */
+export const fetchCountries = async (): Promise<Country[]> => {
   try {
-    return await authenticatedRequest<{ id: string; name: string }[]>('get', '/locations/countries');
+    return await authenticatedRequest<Country[]>('get', '/locations/countries');
   } catch (error: any) {
-    console.error('Error fetching countries:', {
-      message: error.message,
-      response: error.response ? { status: error.response.status, data: error.response.data } : null,
-      config: error.config ? { url: error.config.url, method: error.config.method } : null,
-    });
-    return [{ id: '1', name: 'Kenya' }];
+    console.error('Error fetching countries:', error.message);
+    return [{ id: 1071943693188038657, name: 'Kenya' }];
   }
 };
 
+/**
+ * Fetches counties by country ID.
+ */
 export const fetchCounties = async (
   countryId?: string
-): Promise<{ id: string; name: string; country_id: string }[]> => {
+): Promise<County[]> => {
   try {
-    return await authenticatedRequest<{ id: string; name: string; country_id: string }[]>(
+    return await authenticatedRequest<County[]>(
       'get',
       '/locations/counties',
       null,
       { params: { countryId } }
     );
   } catch (error: any) {
-    console.error('Error fetching counties:', {
-      message: error.message,
-      response: error.response ? { status: error.response.status, data: error.response.data } : null,
-      config: error.config ? { url: error.config.url, method: error.config.method } : null,
-    });
+    console.error('Error fetching counties:', error.message);
     return [];
   }
 };
 
+/**
+ * Fetches sub-counties by county ID.
+ */
 export const fetchSubCounties = async (
   countyId?: string
-): Promise<{ id: string; name: string; county_id: string }[]> => {
+): Promise<SubCounty[]> => {
   try {
-    return await authenticatedRequest<{ id: string; name: string; county_id: string }[]>(
+    return await authenticatedRequest<SubCounty[]>(
       'get',
       '/locations/sub-counties',
       null,
       { params: { countyId } }
     );
   } catch (error: any) {
-    console.error('Error fetching sub-counties:', {
-      message: error.message,
-      response: error.response ? { status: error.response.status, data: error.response.data } : null,
-      config: error.config ? { url: error.config.url, method: error.config.method } : null,
-    });
+    console.error('Error fetching sub-counties:', error.message);
     return [];
   }
 };

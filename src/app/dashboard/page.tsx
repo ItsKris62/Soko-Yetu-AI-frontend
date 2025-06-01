@@ -1,16 +1,21 @@
+/* eslint-disable jsx-a11y/form-has-label */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import useAuthStore from '../../stores/authStore';
 import { 
   fetchDashboardData, 
-  fetchLocationData, 
+  fetchCountries, 
+  fetchCounties, 
+  fetchSubCounties, 
   updateUserProfile, 
   uploadImage,
   createProduct,
-  fetchUserProfile // Added this function
+  fetchUserProfile,
+  fetchPurchasedProducts // Added this function
 } from '../../utils/api';
-import { DashboardData, LocationData } from '../../types/api';
+
+import { DashboardData, Country, County, SubCounty } from '../../types/api';
 import { User } from '../../types/user';
 import { Product } from '../../types/product';
 import UserStats from '../../components/dashboard/UserStats';
@@ -24,7 +29,9 @@ export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showProductForm, setShowProductForm] = useState(false);
-  const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [counties, setCounties] = useState<County[]>([]);
+  const [subCounties, setSubCounties] = useState<SubCounty[]>([]);
   const [loading, setLoading] = useState(true);
   const [productFormLoading, setProductFormLoading] = useState(false);
   const [productFormError, setProductFormError] = useState<string | null>(null);
@@ -37,13 +44,24 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [dashboard, locations] = await Promise.all([
+      const [dashboard, countriesData] = await Promise.all([
         fetchDashboardData(user.id, user.role || 'buyer'),
-        fetchLocationData(),
+        fetchCountries(),
       ]);
       setDashboardData(dashboard);
-      setLocationData(locations);
-    } catch (err) {
+      setCountries(countriesData);
+      
+      // Fetch counties and sub-counties based on user's current selections
+      if (user.country_id) {
+        const countiesData = await fetchCounties(user.country_id.toString());
+        setCounties(countiesData);
+        if (user.county_id) {
+          const subCountiesData = await fetchSubCounties(user.county_id.toString());
+          setSubCounties(subCountiesData);
+        }
+      }
+    } 
+    catch (err) {
       setError('Failed to load dashboard data.');
       console.error('Dashboard data loading error:', err);
     } finally {
@@ -55,35 +73,22 @@ export default function DashboardPage() {
     loadDashboardData();
   }, [loadDashboardData]);
 
-  // Handle product creation
-  const handleProductSubmit = async (formData: any) => {
-    if (!user) return;
-    
-    setProductFormLoading(true);
-    setProductFormError(null);
-    
-    try {
-      const newProductData = { ...formData, farmer_id: user.id };
-      const newProduct = await createProduct(newProductData as Omit<Product, 'id' | 'created_at' | 'updated_at'>);
+  const [dashboard, countriesData] = await Promise.all([
+        fetchDashboardData(user.id, user.role || 'buyer'),
+        fetchCountries(),
+      ]);
+      setDashboardData(dashboard);
+      setCountries(countriesData);
       
-      setDashboardData((prev) => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          products: [...prev.products, newProduct],
-          stats: { ...prev.stats, total_products: prev.stats.total_products + 1 },
-        };
-      });
-      
-      setShowProductForm(false);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to add product.';
-      setProductFormError(errorMessage);
-      console.error('Product creation error:', err);
-    } finally {
-      setProductFormLoading(false);
-    }
-  };
+      // Fetch counties and sub-counties based on user's current selections
+      if (user.country_id) {
+        const countiesData = await fetchCounties(user.country_id.toString());
+        setCounties(countiesData);
+        if (user.county_id) {
+          const subCountiesData = await fetchSubCounties(user.county_id.toString());
+          setSubCounties(subCountiesData);
+        }
+      }
 
   if (!isAuthenticated || !user) {
     return (
@@ -197,7 +202,11 @@ export default function DashboardPage() {
             {activeTab === 'settings' && (
               <SettingsTab 
                 user={user} 
-                locationData={locationData} 
+                countries={countries}
+                counties={counties}
+                subCounties={subCounties}
+                setCounties={setCounties}
+                setSubCounties={setSubCounties}
                 setUser={setUser} 
                 onUserUpdate={loadDashboardData}
               />
@@ -207,7 +216,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Product Form Modal */}
-      {showProductForm && (
+      {showProductForm && role === 'farmer' && (
         <Modal onClose={() => setShowProductForm(false)}>
           <div className="p-6">
             <h3 className="text-xl font-semibold mb-4">Add New Product</h3>
@@ -235,7 +244,7 @@ function OverviewTab({ dashboardData, role }: { dashboardData: DashboardData; ro
     <div>
       <h3 className="text-xl font-semibold text-gray-800 mb-4">Overview</h3>
       <p className="text-gray-600 mb-6">
-        Welcome to your dashboard! Here's a quick summary of your activity.
+        Welcome to your dashboard! Here is a quick summary of your activity.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-gradient-to-r from-[#FFEBD0] to-[#FFE4B5] p-6 rounded-lg shadow-sm">
@@ -309,8 +318,8 @@ function ProductsTab({
               />
               <h4 className="text-lg font-semibold text-gray-800 mb-2">{product.name}</h4>
               <p className="text-gray-600 mb-1">Price: KSH {product.price?.toLocaleString()}</p>
-              {role === 'buyer' && typeof (product as any).quantity === 'number' && (
-                <p className="text-gray-600">Quantity: {(product as any).quantity}</p>
+              {role === 'buyer' && typeof product.quantity === 'number' && (
+                <p className="text-gray-600">Quantity: {product.quantity}</p>
               )}
               {product.description && (
                 <p className="text-gray-500 text-sm mt-2 line-clamp-2">{product.description}</p>
@@ -421,11 +430,14 @@ interface SettingsTabProps {
   onUserUpdate: () => void;
 }
 
-function SettingsTab({ user, locationData, setUser, onUserUpdate }: SettingsTabProps) {
+//  (SettingsTab component)
+function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
   const [currentUser, setCurrentUser] = useState<User>(user);
   const [loading, setLoading] = useState(false);
-  const [fetchingUser, setFetchingUser] = useState(false);
-  const { updateUser, logout } = useAuthStore();
+  const [fetchingLocations, setFetchingLocations] = useState(false);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [counties, setCounties] = useState<County[]>([]);
+  const [subCounties, setSubCounties] = useState<SubCounty[]>([]);
   const [selectedCountry, setSelectedCountry] = useState(user.country_id?.toString() || '');
   const [selectedCounty, setSelectedCounty] = useState(user.county_id?.toString() || '');
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatar_url);
@@ -435,13 +447,7 @@ function SettingsTab({ user, locationData, setUser, onUserUpdate }: SettingsTabP
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors }, 
-    setValue, 
-    reset 
-  } = useForm<User>({ 
+  const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<User>({ 
     defaultValues: currentUser 
   });
 

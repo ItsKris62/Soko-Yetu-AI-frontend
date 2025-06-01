@@ -5,7 +5,7 @@ import { useForm, SubmitHandler, FieldValues } from 'react-hook-form';
 import { Product } from '../../types/product';
 import { fetchCategories, fetchPredefinedProducts, fetchCounties, createProduct, uploadImage } from '../../utils/api';
 import Button from '../common/Button';
-import { useAuthStore } from '../../stores/authStore';
+import useAuthStore from '../../stores/authStore';
 
 type ProductFormProps = {
   onSubmit: (data: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
