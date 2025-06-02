@@ -11,11 +11,12 @@ type ProductFormProps = {
   onSubmit: (data: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
   onClose: () => void;
   initialData?: Product;
+  onProductAdded?: () => void;
 };
 
 type FormData = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
 
-export default function ProductForm({ onSubmit, onClose, initialData }: ProductFormProps) {
+export default function ProductForm({ onSubmit, onClose, initialData, onProductAdded }: ProductFormProps) {
   const { user } = useAuthStore();
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormData>({ defaultValues: initialData });
   const [imagePreview, setImagePreview] = useState<string | undefined>(initialData?.image_url);
@@ -39,7 +40,7 @@ export default function ProductForm({ onSubmit, onClose, initialData }: ProductF
         setCategories(fetchedCategories);
         setPredefinedProducts(fetchedProducts);
         setCounties(fetchedCounties);
-      } catch (err) {
+      } catch {
         setError('Failed to load categories, products, or counties.');
       }
     };
@@ -50,7 +51,7 @@ export default function ProductForm({ onSubmit, onClose, initialData }: ProductF
     if (selectedCategoryId) {
       const filtered = predefinedProducts.filter(p => p.category_id.toString() === selectedCategoryId.toString());
       setFilteredProducts(filtered);
-      setValue('predefined_product_id', undefined); // Reset product selection when category changes
+      setValue('predefined_product_id', ''); // Reset product selection when category changes
     } else {
       setFilteredProducts([]);
     }
@@ -86,6 +87,7 @@ export default function ProductForm({ onSubmit, onClose, initialData }: ProductF
       await createProduct(productData);
       onSubmit(productData);
       onClose();
+      if (onProductAdded) onProductAdded(); // Trigger refetch after successful upload
     } catch (err) {
       setError('Failed to save product.');
     } finally {

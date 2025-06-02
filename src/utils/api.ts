@@ -13,7 +13,6 @@ import {
   FilterParams,
   MarketplaceResponse,
   DashboardData,
-  LocationData,
   Transaction,
   Review,
   Product,
@@ -31,14 +30,7 @@ let effectiveBaseURL = 'http://localhost:5000/api';
 // Check for environment variable to set base URL
 if (process.env.NEXT_PUBLIC_API_URL) {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  // Ensure the URL ends with '/api'
-  if (envUrl.endsWith('/api')) {
-    effectiveBaseURL = envUrl;
-  } else if (envUrl.endsWith('/')) {
-    effectiveBaseURL = `${envUrl}api`;
-  } else {
-    effectiveBaseURL = `${envUrl}/api`;
-  }
+  effectiveBaseURL = envUrl.endsWith('/api') ? envUrl : envUrl.endsWith('/') ? `${envUrl}api` : `${envUrl}/api`;
 }
 
 // Configure axios instance
@@ -67,14 +59,12 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
-
-    // Attempt to refresh token if 401 Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         const { data } = await api.post<LoginResponse>('/auth/refresh');
         useAuthStore.getState().setAuth(data.user, data.token);
-        localStorage.setItem('auth_token', data.token); // Backward compatibility
+        localStorage.setItem('auth_token', data.token);
         originalRequest.headers = {
           ...originalRequest.headers,
           Authorization: `Bearer ${data.token}`,
@@ -87,13 +77,8 @@ api.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
-
-    // Extract error message from response
     const errorData = error.response?.data as { error?: string } | undefined;
-    const errorMessage =
-      errorData?.error ||
-      error.message ||
-      'An unexpected error occurred';
+    const errorMessage = errorData?.error || error.message || 'An unexpected error occurred';
     toast.error(errorMessage);
     return Promise.reject(error);
   }
@@ -181,6 +166,58 @@ export const checkSessionTimeout = async (): Promise<boolean> => {
     return false;
   }
 };
+
+
+// -----------------------------
+// Location APIs
+// -----------------------------
+
+/**
+ * Fetches list of countries.
+ */
+export const fetchCountries = async (): Promise<Country[]> => {
+  try {
+    return await authenticatedRequest<Country[]>('get', '/locations/countries');
+  } catch (error) {
+    console.error('Error fetching countries:', error);
+    return [{ id: 1071943693188038657, name: 'Kenya' }];
+  }
+};
+
+/**
+ * Fetches counties by country ID.
+ */
+export const fetchCounties = async (countryId?: string): Promise<County[]> => {
+  try {
+    return await authenticatedRequest<County[]>(
+      'get',
+      '/locations/counties',
+      null,
+      { params: { countryId } }
+    );
+  } catch (error) {
+    console.error('Error fetching counties:', error);
+    return [];
+  }
+};
+
+/**
+ * Fetches sub-counties by county ID.
+ */
+export const fetchSubCounties = async (countyId?: string): Promise<SubCounty[]> => {
+  try {
+    return await authenticatedRequest<SubCounty[]>(
+      'get',
+      '/locations/sub-counties',
+      null,
+      { params: { countyId } }
+    );
+  } catch (error) {
+    console.error('Error fetching sub-counties:', error);
+    return [];
+  }
+};
+
 
 // Dummy data (updated to match types/api.ts)
 const dummyUser: LoginResponse = {
@@ -451,6 +488,29 @@ export const fetchProducts = async (
   }
 };
 
+export const fetchPurchasedProducts = async (userId: number): Promise<Product[]> => {
+  try {
+    return await authenticatedRequest<Product[]>(
+      'get',
+      `/orders/user/${userId}/products`
+    );
+  } catch (error) {
+    console.error('Error fetching purchased products:', error);
+    return dummyProducts.filter(p => dummyTransactions.some(t => t.product_id.toString() === p.id && t.buyer_id === userId));
+  }
+};
+
+
+export const createProduct = async (
+  data: Omit<Product, 'id' | 'created_at' | 'updated_at'>
+): Promise<Product> => {
+  try {
+    return await authenticatedRequest<Product>('post', '/products', data);
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || error.message || 'Failed to add product');
+  }
+};
+
 export const fetchCategories = async (): Promise<Category[]> => {
   try {
     return await authenticatedRequest<Category[]>('get', '/categories');
@@ -481,69 +541,6 @@ export const fetchPredefinedProducts = async (categoryId?: string): Promise<Pred
   }
 };
 
-// -----------------------------
-// Location APIs
-// -----------------------------
-
-/**
- * Fetches list of countries.
- */
-export const fetchCountries = async (): Promise<Country[]> => {
-  try {
-    return await authenticatedRequest<Country[]>('get', '/locations/countries');
-  } catch (error: any) {
-    console.error('Error fetching countries:', error.message);
-    return [{ id: 1071943693188038657, name: 'Kenya' }];
-  }
-};
-
-/**
- * Fetches counties by country ID.
- */
-export const fetchCounties = async (
-  countryId?: string
-): Promise<County[]> => {
-  try {
-    return await authenticatedRequest<County[]>(
-      'get',
-      '/locations/counties',
-      null,
-      { params: { countryId } }
-    );
-  } catch (error: any) {
-    console.error('Error fetching counties:', error.message);
-    return [];
-  }
-};
-
-/**
- * Fetches sub-counties by county ID.
- */
-export const fetchSubCounties = async (
-  countyId?: string
-): Promise<SubCounty[]> => {
-  try {
-    return await authenticatedRequest<SubCounty[]>(
-      'get',
-      '/locations/sub-counties',
-      null,
-      { params: { countyId } }
-    );
-  } catch (error: any) {
-    console.error('Error fetching sub-counties:', error.message);
-    return [];
-  }
-};
-
-export const createProduct = async (
-  data: Omit<Product, 'id' | 'created_at' | 'updated_at'>
-): Promise<Product> => {
-  try {
-    return await authenticatedRequest<Product>('post', '/products', data);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.error || error.message || 'Failed to add product');
-  }
-};
 
 export const fetchProductById = async (id: string): Promise<Product> => {
   try {
@@ -631,13 +628,15 @@ export const fetchMarketplaceData = async (
   filters: FilterParams = {}
 ): Promise<MarketplaceResponse> => {
   try {
-    return await authenticatedRequest<MarketplaceResponse>(
+    const response = await authenticatedRequest<MarketplaceResponse>(
       'get',
       '/marketplace',
       null,
       { params: { page, limit, ...filters } }
     );
-  } catch {
+    return response;
+  } catch (error) {
+    console.error('Error fetching marketplace data:', error);
     let filteredProducts = dummyProducts;
     if (filters.category) {
       filteredProducts = filteredProducts.filter((p) => p.category_name === filters.category);

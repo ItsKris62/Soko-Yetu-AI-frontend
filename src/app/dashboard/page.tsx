@@ -15,7 +15,7 @@ import {
   fetchPurchasedProducts // Added this function
 } from '../../utils/api';
 
-import { DashboardData, Country, County, SubCounty } from '../../types/api';
+import { DashboardData, Country, County, SubCounty } from '@/types/api';
 import { User } from '../../types/user';
 import { Product } from '../../types/product';
 import UserStats from '../../components/dashboard/UserStats';
@@ -45,7 +45,7 @@ export default function DashboardPage() {
     setError(null);
     try {
       const [dashboard, countriesData] = await Promise.all([
-        fetchDashboardData(user.id, user.role || 'buyer'),
+        fetchDashboardData(user!.id, user!.role === 'farmer' ? 'farmer' : 'buyer'),
         fetchCountries(),
       ]);
       setDashboardData(dashboard);
@@ -53,7 +53,7 @@ export default function DashboardPage() {
       
       // Fetch counties and sub-counties based on user's current selections
       if (user.country_id) {
-        const countiesData = await fetchCounties(user.country_id.toString());
+        const countiesData = await fetchCounties(user!.country_id.toString());
         setCounties(countiesData);
         if (user.county_id) {
           const subCountiesData = await fetchSubCounties(user.county_id.toString());
@@ -73,22 +73,8 @@ export default function DashboardPage() {
     loadDashboardData();
   }, [loadDashboardData]);
 
-  const [dashboard, countriesData] = await Promise.all([
-        fetchDashboardData(user.id, user.role || 'buyer'),
-        fetchCountries(),
-      ]);
-      setDashboardData(dashboard);
-      setCountries(countriesData);
-      
-      // Fetch counties and sub-counties based on user's current selections
-      if (user.country_id) {
-        const countiesData = await fetchCounties(user.country_id.toString());
-        setCounties(countiesData);
-        if (user.county_id) {
-          const subCountiesData = await fetchSubCounties(user.county_id.toString());
-          setSubCounties(subCountiesData);
-        }
-      }
+  // This was removed since 'await' is only allowed in async functions,
+  // and the dashboard data is fetched within the loadDashboardData function.
 
   if (!isAuthenticated || !user) {
     return (
@@ -143,9 +129,8 @@ export default function DashboardPage() {
               </h2>
               <p className="text-gray-600 capitalize">{role === 'farmer' ? 'Farmer' : 'Buyer'}</p>
               <p className="text-gray-600">
-                {user.sub_county_name && `${user.sub_county_name}, `}
-                {user.county_name && `${user.county_name}, `}
-                {user.country_name}
+                {user.sub_county_id && `${user.sub_county_id}, `}
+                {countries.find((country) => country.id === user.country_id)?.name || 'Unknown Country'}
               </p>
               <p className="text-gray-600">
                 Joined: {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
@@ -187,7 +172,8 @@ export default function DashboardPage() {
               <ProductsTab 
                 dashboardData={dashboardData} 
                 role={role} 
-                onAddProduct={() => setShowProductForm(true)} 
+                onAddProduct={() => setShowProductForm(true)}
+                userId={user.id} 
               />
             )}
 
@@ -217,7 +203,7 @@ export default function DashboardPage() {
 
       {/* Product Form Modal */}
       {showProductForm && role === 'farmer' && (
-        <Modal onClose={() => setShowProductForm(false)}>
+        <Modal show={showProductForm} onClose={() => setShowProductForm(false)}>
           <div className="p-6">
             <h3 className="text-xl font-semibold mb-4">Add New Product</h3>
             {productFormError && (
@@ -228,7 +214,7 @@ export default function DashboardPage() {
             <ProductForm
               onSubmit={handleProductSubmit}
               onClose={() => setShowProductForm(false)}
-              initialData={{ farmer_id: user.id } as Partial<Product>}
+              initialData={{ id: 0, farmer_id: user.id, predefined_product_id: 0, product_name: '', price: 0 }}
               isLoading={productFormLoading}
             />
           </div>
@@ -270,17 +256,34 @@ function OverviewTab({ dashboardData, role }: { dashboardData: DashboardData; ro
 function ProductsTab({ 
   dashboardData, 
   role, 
-  onAddProduct 
+  onAddProduct,
+  userId
 }: { 
   dashboardData: DashboardData; 
   role: string; 
-  onAddProduct: () => void; 
+  onAddProduct: () => void;
+  userId: number; 
 }) {
+  const [purchasedProducts, setPurchasedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (role === 'buyer') {
+      setLoading(true);
+      fetchPurchasedProducts(userId)
+        .then(setPurchasedProducts)
+        .catch((err) => console.error('Error fetching purchased products:', err))
+        .finally(() => setLoading(false));
+    }
+  }, [role, userId]);
+
+  const productsToDisplay = role === 'farmer' ? dashboardData.products : purchasedProducts;
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-semibold text-gray-800">
-          {role === 'farmer' ? 'Your Products' : 'Recent Purchases'}
+          {role === 'farmer' ? 'Your Products' : 'Purchased Produce'}
         </h3>
         {role === 'farmer' && (
           <Button
@@ -292,9 +295,15 @@ function ProductsTab({
         )}
       </div>
       
-      {dashboardData.products.length === 0 ? (
+
+      {loading ? (
         <div className="text-center py-12">
-          <p className="text-gray-600 mb-4">No products found.</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#278783] mx-auto mb-4"></div>
+          Loading products...
+        </div>
+      ) : productsToDisplay.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-600 mb-4">{role === 'farmer' ? 'No products listed.' : 'No purchased produce.'}</p>
           {role === 'farmer' && (
             <Button
               onClick={onAddProduct}
@@ -306,20 +315,20 @@ function ProductsTab({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {dashboardData.products.map((product) => (
+          {productsToDisplay.map((product) => (
             <div key={product.id} className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
               <img
                 src={product.image_url || '/images/placeholder.jpg'}
-                alt={product.name}
+                alt={product.product_name}
                 className="w-full h-40 object-cover rounded-lg mb-4"
                 onError={(e) => {
                   e.currentTarget.src = '/images/placeholder.jpg';
                 }}
               />
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">{product.name}</h4>
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">{product.product_name}</h4>
               <p className="text-gray-600 mb-1">Price: KSH {product.price?.toLocaleString()}</p>
-              {role === 'buyer' && typeof product.quantity === 'number' && (
-                <p className="text-gray-600">Quantity: {product.quantity}</p>
+              {role === 'buyer' && ('quantity' in product) && (
+                <p className="text-gray-600">Quantity: {(product as Product & { quantity: number }).quantity}</p>
               )}
               {product.description && (
                 <p className="text-gray-500 text-sm mt-2 line-clamp-2">{product.description}</p>
@@ -425,19 +434,19 @@ function ReviewsTab({ reviews }: { reviews: any[] }) {
 // Enhanced Settings Tab Component
 interface SettingsTabProps {
   user: User;
-  locationData: LocationData | null;
+  countries: Country[];
+  counties: County[];
+  subCounties: SubCounty[];
+  setCounties: (counties: County[]) => void;
+  setSubCounties: (subCounties: SubCounty[]) => void;
   setUser: (user: User | null) => void;
   onUserUpdate: () => void;
 }
 
-//  (SettingsTab component)
-function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
+function SettingsTab({ user, countries, counties, subCounties, setCounties, setSubCounties, setUser, onUserUpdate }: SettingsTabProps) {
   const [currentUser, setCurrentUser] = useState<User>(user);
   const [loading, setLoading] = useState(false);
-  const [fetchingLocations, setFetchingLocations] = useState(false);
-  const [countries, setCountries] = useState<Country[]>([]);
-  const [counties, setCounties] = useState<County[]>([]);
-  const [subCounties, setSubCounties] = useState<SubCounty[]>([]);
+  const [fetchingUser, setFetchingUser] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(user.country_id?.toString() || '');
   const [selectedCounty, setSelectedCounty] = useState(user.county_id?.toString() || '');
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatar_url);
@@ -447,7 +456,13 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<User>({ 
+  const { 
+    register, 
+    handleSubmit, 
+    formState: { errors }, 
+    setValue, 
+    reset 
+  } = useForm<User>({ 
     defaultValues: currentUser 
   });
 
@@ -466,13 +481,23 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
       setSelectedCounty(userData.county_id?.toString() || '');
       setAvatarPreview(userData.avatar_url);
       setNationalIdPreview(userData.national_id_url);
+      
+      // Fetch counties and sub-counties if applicable
+      if (userData.country_id) {
+        const countiesData = await fetchCounties(userData.country_id.toString());
+        setCounties(countiesData);
+        if (userData.county_id) {
+          const subCountiesData = await fetchSubCounties(userData.county_id.toString());
+          setSubCounties(subCountiesData);
+        }
+      }
     } catch (err) {
       setError('Failed to fetch user data from server.');
       console.error('Error fetching user data:', err);
     } finally {
       setFetchingUser(false);
     }
-  }, [user?.id, reset]);
+  }, [user?.id, reset, setCounties, setSubCounties]);
 
   useEffect(() => {
     fetchCurrentUserData();
@@ -481,7 +506,6 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (e.g., max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setError('Avatar file size must be less than 5MB');
         return;
@@ -495,7 +519,6 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
   const handleNationalIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (e.g., max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setError('National ID file size must be less than 5MB');
         return;
@@ -515,22 +538,12 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
       let avatar_url = currentUser.avatar_url;
       let national_id_url = currentUser.national_id_url;
 
-      // Upload avatar if a new file is selected
       if (avatarFile) {
-        try {
-          avatar_url = await uploadImage(avatarFile);
-        } catch (uploadError) {
-          throw new Error('Failed to upload avatar image');
-        }
+        avatar_url = await uploadImage(avatarFile);
       }
 
-      // Upload national ID if a new file is selected
       if (nationalIdFile) {
-        try {
-          national_id_url = await uploadImage(nationalIdFile);
-        } catch (uploadError) {
-          throw new Error('Failed to upload national ID image');
-        }
+        national_id_url = await uploadImage(nationalIdFile);
       }
 
       const updatedData: Partial<User> = {
@@ -543,27 +556,15 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
         national_id_url,
       };
 
-      // Update user profile
-      await updateUserProfile(currentUser.id, updatedData);
-
-      // Update local state
-      const updatedUser = {
-        ...currentUser,
-        ...updatedData,
-        country_name: locationData?.countries.find(c => c.id === data.country_id)?.name,
-        county_name: locationData?.counties.find(c => c.id === data.county_id)?.name,
-        sub_county_name: locationData?.subcounties.find(s => s.id === data.sub_county_id)?.name,
-      };
-
+      const updatedUser = await updateUserProfile(currentUser.id, updatedData);
+      
       setCurrentUser(updatedUser);
       setUser(updatedUser);
       setSuccess('Profile updated successfully!');
       
-      // Reset file inputs
       setAvatarFile(null);
       setNationalIdFile(null);
       
-      // Trigger dashboard data refresh
       onUserUpdate();
       
     } catch (error) {
@@ -574,23 +575,6 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
       setLoading(false);
     }
   };
-
-  const filteredCounties = locationData?.counties.filter(
-    (county) => county.country_id === Number(selectedCountry)
-  ) || [];
-  
-  const filteredSubcounties = locationData?.subcounties.filter(
-    (subcounty) => subcounty.county_id === Number(selectedCounty)
-  ) || [];
-
-  if (fetchingUser) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#278783] mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading user data...</p>
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -619,7 +603,6 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Read-only fields */}
           <div>
             <label className="block text-gray-700 font-medium mb-2">First Name</label>
             <input
@@ -640,7 +623,6 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
             />
           </div>
           
-          {/* Editable fields */}
           <div>
             <label className="block text-gray-700 font-medium mb-2">Email *</label>
             <input
@@ -704,18 +686,25 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
             <label className="block text-gray-700 font-medium mb-2">Country *</label>
             <select
               {...register('country_id', { required: 'Country is required' })}
-              onChange={(e) => {
+              onChange={async (e) => {
                 const value = e.target.value;
                 setSelectedCountry(value);
                 setValue('country_id', value ? parseInt(value) : undefined);
                 setValue('county_id', undefined);
                 setValue('sub_county_id', undefined);
                 setSelectedCounty('');
+                setSubCounties([]);
+                if (value) {
+                  const countiesData = await fetchCounties(value);
+                  setCounties(countiesData);
+                } else {
+                  setCounties([]);
+                }
               }}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#278783] focus:border-transparent"
             >
               <option value="">Select Country</option>
-              {locationData?.countries.map((country) => (
+              {countries.map((country) => (
                 <option key={country.id} value={country.id}>
                   {country.name}
                 </option>
@@ -730,17 +719,23 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
             <label className="block text-gray-700 font-medium mb-2">County *</label>
             <select
               {...register('county_id', { required: 'County is required' })}
-              onChange={(e) => {
+              onChange={async (e) => {
                 const value = e.target.value;
                 setSelectedCounty(value);
                 setValue('county_id', value ? parseInt(value) : undefined);
                 setValue('sub_county_id', undefined);
+                if (value) {
+                  const subCountiesData = await fetchSubCounties(value);
+                  setSubCounties(subCountiesData);
+                } else {
+                  setSubCounties([]);
+                }
               }}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#278783] focus:border-transparent"
               disabled={!selectedCountry}
             >
               <option value="">Select County</option>
-              {filteredCounties.map((county) => (
+              {counties.map((county) => (
                 <option key={county.id} value={county.id}>
                   {county.name}
                 </option>
@@ -759,7 +754,7 @@ function SettingsTab({ user, setUser, onUserUpdate }: SettingsTabProps) {
               disabled={!selectedCounty}
             >
               <option value="">Select Sub-County</option>
-              {filteredSubcounties.map((subcounty) => (
+              {subCounties.map((subcounty) => (
                 <option key={subcounty.id} value={subcounty.id}>
                   {subcounty.name}
                 </option>
