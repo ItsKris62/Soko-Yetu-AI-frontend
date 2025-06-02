@@ -84,13 +84,29 @@ api.interceptors.response.use(
   }
 );
 
-// Generic authenticated request helper
+// In-memory cache
+const cache: { [key: string]: any } = {};
+
+// Utility function to delay execution
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Generic authenticated request helper with retry logic for 429 errors
 export const authenticatedRequest = async <T>(
   method: 'get' | 'post' | 'put' | 'delete',
   url: string,
   data?: unknown,
-  config?: AxiosRequestConfig
+  config?: AxiosRequestConfig,
+  retries: number = 3,
+  backoff: number = 1000 // Initial backoff time in milliseconds
 ): Promise<T> => {
+  // Create a cache key based on the URL and params
+  const cacheKey = `${method}:${url}:${JSON.stringify(config?.params)}`;
+
+  // Check if the response is cached
+  if (method === 'get' && cache[cacheKey]) {
+    return cache[cacheKey];
+  }
+  // If not cached, make the API request
   try {
     const response = await api({
       method,
@@ -98,15 +114,31 @@ export const authenticatedRequest = async <T>(
       data,
       ...config,
     });
+
+    // Cache GET requests
+    if (method === 'get') {
+      cache[cacheKey] = response.data;
+    }
+
     return response.data;
   } catch (error) {
     const axiosError = error as AxiosError;
+    if (axiosError.response?.status === 429 && retries > 0) {
+      console.warn(`Rate limit hit for ${url}. Retrying after ${backoff}ms... (${retries} retries left)`);
+      await delay(backoff);
+      return authenticatedRequest<T>(method, url, data, config, retries - 1, backoff * 2); // Exponential backoff
+    }
     throw new Error(
-          (axiosError.response?.data as { error?: string })?.error ||
-          axiosError.message ||
-          'Request failed'
-        );
+      (axiosError.response?.data as { error?: string })?.error ||
+      axiosError.message ||
+      'Request failed'
+    );
   }
+};
+
+// Clear cache function (optional, for debugging or manual cache invalidation)
+export const clearCache = () => {
+  Object.keys(cache).forEach((key) => delete cache[key]);
 };
 
 // ------------------------------------
