@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import ProductCard from '../../components/marketplace/ProductCard';
 import ProductFilter from '../../components/marketplace/ProductFilter';
 import { fetchMarketplaceData } from '../../utils/api';
-import { Product, MarketplaceResponse, FilterParams } from '../../types/api';
+import { Product as ProductType, MarketplaceResponse, FilterParams } from '../../types/api';
 import ProductForm from '../../components/products/ProductForm'; 
 import Button from '../../components/common/Button';
 import Modal from '@/components/common/Modal';
@@ -13,7 +13,7 @@ import Link from 'next/link';
 
 export default function MarketplacePage() {
   const { isAuthenticated } = useAuthStore();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductType[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [limit] = useState<number>(10);
@@ -25,6 +25,7 @@ export default function MarketplacePage() {
 
 // Refetch function
   const fetchProducts = useCallback(async () => {
+    if (products.length > 0) return;
     setLoading(true);
     setError(null);
     try {

@@ -85,7 +85,7 @@ api.interceptors.response.use(
 );
 
 // In-memory cache
-const cache: { [key: string]: any } = {};
+const cache: Record<string, unknown> = {};
 
 // Utility function to delay execution
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -97,14 +97,14 @@ export const authenticatedRequest = async <T>(
   data?: unknown,
   config?: AxiosRequestConfig,
   retries: number = 3,
-  backoff: number = 1000 // Initial backoff time in milliseconds
+  backoff: number = 5000 // Initial backoff time in milliseconds
 ): Promise<T> => {
   // Create a cache key based on the URL and params
   const cacheKey = `${method}:${url}:${JSON.stringify(config?.params)}`;
 
   // Check if the response is cached
   if (method === 'get' && cache[cacheKey]) {
-    return cache[cacheKey];
+    return cache[cacheKey] as T;
   }
   // If not cached, make the API request
   try {

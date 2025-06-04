@@ -35,6 +35,7 @@ export default function ProductFilter({ onFilterChange }: ProductFilterProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [isDataFetched, setIsDataFetched] = useState(false);
   const debouncedSearchQuery = useDebounce(searchInput, 500);
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function ProductFilter({ onFilterChange }: ProductFilterProps) {
     const loadData = async () => {
       setLoading(true);
       setError(null);
+       setIsDataFetched(true);
 
       try {
         const [fetchedCategories, fetchedCountries, fetchedCounties] = await Promise.all([
@@ -72,12 +74,13 @@ export default function ProductFilter({ onFilterChange }: ProductFilterProps) {
         }
       }
     };
+    if (isDataFetched) return; // Check if data has already been fetched
     loadData();
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isDataFetched]);
 
   useEffect(() => {
     handleFilterChange('searchQuery', debouncedSearchQuery);
