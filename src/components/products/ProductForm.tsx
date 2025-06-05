@@ -8,7 +8,6 @@ import Button from '../common/Button';
 import useAuthStore from '../../stores/authStore';
 
 type ProductFormProps = {
-  onSubmit: (data: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
   onClose: () => void;
   initialData?: Product;
   onProductAdded?: () => void;
@@ -16,9 +15,26 @@ type ProductFormProps = {
 
 type FormData = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
 
-export default function ProductForm({ onSubmit, onClose, initialData, onProductAdded }: ProductFormProps) {
+export default function ProductForm({ onClose, initialData, onProductAdded }: ProductFormProps) {
+
   const { user } = useAuthStore();
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormData>({ defaultValues: initialData });
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormData>({
+    defaultValues: initialData
+      ? {
+          ...initialData,
+          // Ensure string values for select defaults if IDs are numbers in Product
+          category_id: initialData.category_id?.toString() as any, // RHF expects string for select
+          predefined_product_id: initialData.predefined_product_id?.toString() as any,
+          county_id: initialData.county_id?.toString() as any,
+        }
+      : {
+          // Sensible defaults for a new product form
+          product_name: '',
+          description: '',
+          price: 0,
+          image_url: '',
+        },
+  });
   const [imagePreview, setImagePreview] = useState<string | undefined>(initialData?.image_url);
   const [categories, setCategories] = useState<{ id: number | string; name: string }[]>([]);
   const [predefinedProducts, setPredefinedProducts] = useState<{ id: number | string; name: string; category_id: number | string; category_name: string }[]>([]);
