@@ -34,6 +34,18 @@ export interface PredefinedProduct {
   category_name: string;
 }
 
+// Resource type
+export interface Resource {
+  id: string;
+  title: string;
+  description?: string | null;
+  type: 'article' | 'video' | 'pdf';
+  url: string;
+  category: string;
+  target_role?: 'farmer' | 'buyer' | null;
+  created_at: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -109,6 +121,7 @@ export interface FilterParams {
   searchQuery?: string;
 }
 
+// Updated MarketplaceResponse type
 export interface MarketplaceResponse {
   products: Product[];
   total: number;
@@ -170,4 +183,46 @@ export interface LocationData {
   countries: { id: string; name: string }[];
   counties: { id: string; name: string; country_id: string }[];
   subcounties: { id: string; name: string; county_id: string }[];
+}
+
+export interface ForumPost {
+  id: string;
+  user_id: number;
+  title: string;
+  content: string;
+  category: string;
+  upvote_count: number;
+  created_at: string;
+  updated_at: string;
+  first_name: string;
+  last_name: string;
+  reply_count: number;
+}
+
+export interface ForumReply {
+  id: string;
+  post_id: string;
+  user_id: number;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface PostUpvote {
+  id: string;
+  post_id: string;
+  user_id: number;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: number;
+  type: string;
+  reference_id: string;
+  message: string;
+  read: boolean;
+  created_at: string;
 }

@@ -250,6 +250,214 @@ export const fetchSubCounties = async (countyId?: string): Promise<SubCounty[]> 
   }
 };
 
+// -------------------------------------------------------------------------------------------------------
+// Resource APIs
+// -------------------------------------------------------------------------------------------------------
+
+export const fetchResources = async (
+  page: number = 1,
+  limit: number = 10,
+  type?: string
+): Promise<{ resources: Resource[]; total: number }> => {
+  try {
+    const response = await api.get<{ resources: Resource[]; total: number }>('/resources', {
+      params: { page, limit, type },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching resources:', error.response?.data || error.message);
+    // Fallback dummy data
+    const dummyResources: Resource[] = [
+      {
+        id: '1',
+        title: 'How to Price Your Crops Using AI Predictions',
+        description: 'Learn how to leverage AI to price your crops effectively.',
+        type: 'article',
+        url: 'https://example.com/ai-pricing-guide',
+        category: 'Platform Guides',
+        target_role: 'farmer',
+        created_at: '2025-06-06T08:00:00Z',
+      },
+      {
+        id: '2',
+        title: 'Tutorial: Listing Products on the Marketplace',
+        description: 'A video tutorial on how to list products.',
+        type: 'video',
+        url: 'https://example.com/listing-tutorial.mp4',
+        category: 'Platform Guides',
+        target_role: 'farmer',
+        created_at: '2025-06-06T08:00:00Z',
+      },
+      {
+        id: '3',
+        title: 'Guide to Organic Farming Standards',
+        description: 'A comprehensive guide on organic farming practices.',
+        type: 'pdf',
+        url: 'https://example.com/organic-farming-guide.pdf',
+        category: 'Farming Techniques',
+        target_role: 'farmer',
+        created_at: '2025-06-06T08:00:00Z',
+      },
+      {
+        id: '4',
+        title: 'Market Report: Q1 2025 Agricultural Trends',
+        description: 'Insights into market trends for buyers.',
+        type: 'pdf',
+        url: 'https://example.com/market-report-q1-2025.pdf',
+        category: 'Market Insights',
+        target_role: 'buyer',
+        created_at: '2025-06-06T08:00:00Z',
+      },
+    ];
+
+    let filteredResources = dummyResources;
+    if (type) {
+      filteredResources = dummyResources.filter((r) => r.type === type);
+    }
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    return {
+      resources: filteredResources.slice(start, end),
+      total: filteredResources.length,
+    };
+  }
+};
+
+// ------------------------------------------------------
+// Forum
+// ------------------------------------------------------
+
+
+export const fetchForumPosts = async (
+  page: number = 1,
+  limit: number = 10,
+  category?: string,
+  search?: string
+): Promise<{ posts: ForumPost[]; total: number }> => {
+  try {
+    const response = await api.get<{ posts: ForumPost[]; total: number }>('/community/posts', {
+      params: { page, limit, category, search },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching forum posts:', error.response?.data || error.message);
+    const dummyPosts: ForumPost[] = [
+      {
+        id: '1',
+        user_id: 1,
+        title: 'Best Practices for Maize Farming',
+        content: 'What are the best practices for growing maize in Nakuru County?',
+        category: 'Farming Tips',
+        upvote_count: 5,
+        created_at: '2025-06-06T09:00:00Z',
+        updated_at: '2025-06-06T09:00:00Z',
+        first_name: 'John',
+        last_name: 'Doe',
+        reply_count: 1,
+      },
+      {
+        id: '2',
+        user_id: 2,
+        title: 'How to Interpret Market Demand Trends?',
+        content: 'Can someone explain how to use the market demand data on this platform?',
+        category: 'Market Insights',
+        upvote_count: 3,
+        created_at: '2025-06-06T10:00:00Z',
+        updated_at: '2025-06-06T10:00:00Z',
+        first_name: 'Jane',
+        last_name: 'Smith',
+        reply_count: 1,
+      },
+    ];
+
+    let filteredPosts = dummyPosts;
+    if (category) {
+      filteredPosts = dummyPosts.filter((p) => p.category === category);
+    }
+    if (search) {
+      const query = search.toLowerCase();
+      filteredPosts = dummyPosts.filter(
+        (p) => p.title.toLowerCase().includes(query) || p.content.toLowerCase().includes(query)
+      );
+    }
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    return {
+      posts: filteredPosts.slice(start, end),
+      total: filteredPosts.length,
+    };
+  }
+};
+
+export const createForumPost = async (data: { title: string; content: string; category: string }): Promise<ForumPost> => {
+  try {
+    const response = await api.post<ForumPost>('/community/posts', data);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || error.message || 'Failed to create post');
+  }
+};
+
+export const upvotePost = async (postId: string): Promise<{ upvote_count: number }> => {
+  try {
+    const response = await api.post<{ upvote_count: number }>(`/community/posts/${postId}/upvote`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || error.message || 'Failed to upvote post');
+  }
+};
+
+export const fetchForumPostById = async (postId: string): Promise<ForumPost> => {
+  try {
+    const response = await api.get<ForumPost>(`/community/posts/${postId}`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || error.message || 'Post not found');
+  }
+};
+
+export const fetchForumReplies = async (
+  postId: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<{ replies: ForumReply[]; total: number }> => {
+  try {
+    const response = await api.get<{ replies: ForumReply[]; total: number }>(`/community/posts/${postId}/replies`, {
+      params: { page, limit },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching forum replies:', error.response?.data || error.message);
+    const dummyReplies: ForumReply[] = [
+      {
+        id: '1',
+        post_id: postId,
+        user_id: 2,
+        content: 'Ensure proper soil preparation and use quality seeds.',
+        created_at: '2025-06-06T09:30:00Z',
+        updated_at: '2025-06-06T09:30:00Z',
+        first_name: 'Jane',
+        last_name: 'Smith',
+      },
+    ];
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    return {
+      replies: dummyReplies.slice(start, end),
+      total: dummyReplies.length,
+    };
+  }
+};
+
+export const createForumReply = async (postId: string, content: string): Promise<ForumReply> => {
+  try {
+    const response = await api.post<ForumReply>(`/community/posts/${postId}/replies`, { content });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || error.message || 'Failed to create reply');
+  }
+};
+
 
 // Dummy data (updated to match types/api.ts)
 const dummyUser: LoginResponse = {

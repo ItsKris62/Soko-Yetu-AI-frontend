@@ -83,19 +83,19 @@ export default function MarketplacePage() {
   }, [products]);
 
   if (loading) {
-    return <div className="py-12 px-6 text-center text-gray-600">Loading...</div>;
+    return <div className="pt-16 px-6 pb-12 text-center text-gray-600">Loading...</div>;
   }
 
   if (error) {
     return (
-      <div className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-100 min-h-screen">
+      <div className="pt-16 px-4 sm:px-6 lg:px-8 pb-12 bg-gray-100 min-h-screen">
         <div className="max-w-7xl mx-auto text-center text-red-500">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-100 min-h-screen">
+    <div className="pt-16 px-4 sm:px-6 lg:px-8 pb-12 bg-gray-100 min-h-screen">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
           <div className="mb-4 sm:mb-0">

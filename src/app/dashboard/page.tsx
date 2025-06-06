@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/form-has-label */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,6 +13,8 @@ import {
   fetchUserProfile,
   fetchPurchasedProducts // Added this function
 } from '../../utils/api';
+
+import RootLayout from '../layout';
 
 import { DashboardData, Country, County, SubCounty } from '@/types/api';
 import { User } from '../../types/user';
@@ -78,7 +79,7 @@ export default function DashboardPage() {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="py-12 px-6 text-center text-gray-600">
+      <div className="px-6 pb-12 text-center text-gray-600 min-h-screen">
         Please log in to view your dashboard.
       </div>
     );
@@ -86,7 +87,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="py-12 px-6 text-center text-gray-600">
+      <div className="px-6 pb-12 text-center text-gray-600 min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#278783] mx-auto mb-4"></div>
         Loading dashboard...
       </div>
@@ -95,7 +96,7 @@ export default function DashboardPage() {
 
   if (error || !dashboardData) {
     return (
-      <div className="py-12 px-6 text-center text-red-500">
+      <div className="px-6 pb-12 text-center text-red-500 min-h-screen">
         <div className="mb-4">{error || 'Failed to load dashboard data.'}</div>
         <Button 
           onClick={loadDashboardData}
@@ -110,7 +111,7 @@ export default function DashboardPage() {
   const role = user.role || 'buyer';
 
   return (
-    <div className="py-12 px-6 bg-gray-50 min-h-screen">
+    <div className="px-6 pb-12 bg-gray-50 min-h-screen">
       <div className="max-w-5xl mx-auto">
         {/* Profile Header */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
