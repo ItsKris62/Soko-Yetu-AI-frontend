@@ -264,9 +264,10 @@ export const fetchResources = async (
       params: { page, limit, type },
     });
     return response.data;
-  } catch (error: any) {
-    console.error('Error fetching resources:', error.response?.data || error.message);
-    // Fallback dummy data
+  } catch (error: unknown) {
+      const axiosError = error as AxiosError;
+      console.error('Error fetching resources:', axiosError.response?.data || axiosError.message);
+      // Fallback dummy data
     const dummyResources: Resource[] = [
       {
         id: '1',
@@ -339,8 +340,9 @@ export const fetchForumPosts = async (
       params: { page, limit, category, search },
     });
     return response.data;
-  } catch (error: any) {
-    console.error('Error fetching forum posts:', error.response?.data || error.message);
+  } catch (error: unknown) {
+    const axiosError = error as AxiosError;
+    console.error('Error fetching forum posts:', axiosError.response?.data || axiosError.message);
     const dummyPosts: ForumPost[] = [
       {
         id: '1',
@@ -393,8 +395,13 @@ export const createForumPost = async (data: { title: string; content: string; ca
   try {
     const response = await api.post<ForumPost>('/community/posts', data);
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.error || error.message || 'Failed to create post');
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.error || error.message || 'Failed to create post');
+    } else if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to create post');
+    }
+    throw new Error('Failed to create post');
   }
 };
 
@@ -402,7 +409,7 @@ export const upvotePost = async (postId: string): Promise<{ upvote_count: number
   try {
     const response = await api.post<{ upvote_count: number }>(`/community/posts/${postId}/upvote`);
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     throw new Error(error.response?.data?.error || error.message || 'Failed to upvote post');
   }
 };
@@ -411,7 +418,7 @@ export const fetchForumPostById = async (postId: string): Promise<ForumPost> => 
   try {
     const response = await api.get<ForumPost>(`/community/posts/${postId}`);
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     throw new Error(error.response?.data?.error || error.message || 'Post not found');
   }
 };

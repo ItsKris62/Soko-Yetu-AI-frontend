@@ -27,8 +27,12 @@ export default function ForumPostCard({ post, onUpvoteSuccess }: ForumPostCardPr
       if (onUpvoteSuccess) {
         onUpvoteSuccess(post.id, upvote_count);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     }
   };
 

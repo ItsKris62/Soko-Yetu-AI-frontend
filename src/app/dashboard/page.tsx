@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/form-has-label */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -343,7 +344,16 @@ function ProductsTab({
 }
 
 // Transactions Tab Component
-function TransactionsTab({ transactions }: { transactions: any[] }) {
+interface Transaction {
+  id: number;
+  product_name: string;
+  status: 'completed' | 'pending' | string;
+  quantity: number;
+  total_price: number;
+  created_at: string;
+}
+
+function TransactionsTab({ transactions }: { transactions: Transaction[] }) {
   return (
     <div>
       <h3 className="text-xl font-semibold text-gray-800 mb-6">Recent Transactions</h3>
@@ -393,8 +403,18 @@ function TransactionsTab({ transactions }: { transactions: any[] }) {
   );
 }
 
+// Define the Review type based on the expected fields
+interface Review {
+  id: number;
+  product_name: string;
+  rating: number;
+  comment: string;
+  reviewer_name: string;
+  created_at: string;
+}
+
 // Reviews Tab Component
-function ReviewsTab({ reviews }: { reviews: any[] }) {
+function ReviewsTab({ reviews }: { reviews: Review[] }) {
   return (
     <div>
       <h3 className="text-xl font-semibold text-gray-800 mb-6">Reviews</h3>

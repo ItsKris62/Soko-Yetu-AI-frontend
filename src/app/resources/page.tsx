@@ -31,6 +31,7 @@ export default function ResourcesPage() {
       setResources((prev) => (reset ? fetchedResources : [...prev, ...fetchedResources]));
       setTotal(fetchedTotal);
     } catch (err) {
+      console.error(err);
       setError('Failed to load resources. Please try again later.');
     } finally {
       setLoading(false);
@@ -132,6 +133,7 @@ export default function ResourcesPage() {
               <div className="relative">
                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <select
+                  title="Resource Type Filter"
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
                   className="pl-10 pr-8 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#278783] focus:border-transparent transition-all appearance-none bg-white min-w-[160px]"
@@ -161,7 +163,7 @@ export default function ResourcesPage() {
                 )}
                 {searchQuery && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                    Search: "{searchQuery}"
+                    Search: &quot;{searchQuery}&quot;
                     <button
                       onClick={() => setSearchQuery('')}
                       className="ml-2 hover:bg-blue-200 rounded-full p-0.5"
