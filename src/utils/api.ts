@@ -19,6 +19,7 @@ import {
   User,
   Category,
   PredefinedProduct,
+  Resource,
 } from '../types/api';
 
 // Import user-related types (including Country, County, SubCounty)
